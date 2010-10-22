@@ -17,7 +17,7 @@ class RoundRobinScheduler implements Scheduler {
 	private final ArrayList<IbisIdentifier> peers = new ArrayList<IbisIdentifier>();
 	private int nextPeer = 0;
 	private final TaskSet taskSet;
-	final OutstandingRequestList outstandingRequests = new OutstandingRequestList();
+	private final OutstandingRequestList outstandingRequests = new OutstandingRequestList();
 
 	RoundRobinScheduler(final int tasks){
 		taskSet = new TaskSet(tasks);

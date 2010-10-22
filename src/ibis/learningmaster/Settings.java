@@ -38,4 +38,7 @@ class Settings {
 	static final boolean TraceTransmitterLoop = false;
 
 	static final int TASK_COUNT = 10000;
+
+	// 2 minutes
+	static final int TASK_DURATION = 1000*60*2;
 }

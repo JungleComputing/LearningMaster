@@ -14,7 +14,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 class Engine extends Thread implements PacketReceiveListener,
-RegistryEventHandler, EngineInterface {
+		RegistryEventHandler, EngineInterface {
 	private static final IbisCapabilities ibisCapabilities = new IbisCapabilities(
 			IbisCapabilities.MEMBERSHIP_UNRELIABLE,
 			IbisCapabilities.ELECTIONS_STRICT);
@@ -38,7 +38,7 @@ RegistryEventHandler, EngineInterface {
 	private final Scheduler scheduler;
 
 	Engine(final boolean helper) throws IbisCreationFailedException,
-	IOException {
+			IOException {
 		super("LearningMaster engine thread");
 		final boolean runForMaster = !helper;
 		this.transmitter = new Transmitter(this);
@@ -49,7 +49,7 @@ RegistryEventHandler, EngineInterface {
 		final Registry registry = localIbis.registry();
 		final IbisIdentifier myIbis = localIbis.identifier();
 		final IbisIdentifier masterIdentifier = registry
-		.elect(MASTER_ELECTION_NAME);
+				.elect(MASTER_ELECTION_NAME);
 		isMaster = masterIdentifier.equals(myIbis);
 		if (isMaster) {
 			scheduler = new RoundRobinScheduler(Settings.TASK_COUNT);
@@ -75,7 +75,7 @@ RegistryEventHandler, EngineInterface {
 		if (peer.equals(localIbis.identifier())) {
 			if (!stopped.isSet()) {
 				Globals.log
-				.reportError("This peer has been declared dead, we might as well stop");
+						.reportError("This peer has been declared dead, we might as well stop");
 				setStopped();
 			}
 		} else {
@@ -90,7 +90,7 @@ RegistryEventHandler, EngineInterface {
 		if (peer.equals(localIbis.identifier())) {
 			if (!stopped.isSet()) {
 				Globals.log
-				.reportError("This peer has been declared `left', we might as well stop");
+						.reportError("This peer has been declared `left', we might as well stop");
 				setStopped();
 			}
 		} else {
@@ -261,7 +261,7 @@ RegistryEventHandler, EngineInterface {
 				break;
 			}
 			final long lingerTime = System.currentTimeMillis()
-			- msg.arrivalTime;
+					- msg.arrivalTime;
 			receivedMessageQueueStatistics.registerSample(lingerTime * 1e-3);
 			handleMessage(msg);
 			progress = true;
@@ -272,9 +272,10 @@ RegistryEventHandler, EngineInterface {
 	}
 
 	/**
-	 * Fulfill the request for one chunk.
+	 * If the work queue is not empty, get a task request from the work queue
+	 * and handle it.
 	 * 
-	 * @return <code>true</code> iff we actually fulfilled a chunk request.
+	 * @return <code>true</code> iff we actually handled a task request.
 	 */
 	private boolean handleAWorkRequest() {
 		final RequestMessage request = workQueue.poll();
@@ -284,9 +285,13 @@ RegistryEventHandler, EngineInterface {
 			return false;
 		}
 		final int jobNo = request.jobNo;
-		// FIXME: actually implement some kind of work.
-		final Message piece = new TaskCompletedMessage(jobNo);
-		transmitter.addToDataQueue(request.source, piece);
+		try {
+			Thread.sleep(Settings.TASK_DURATION);
+		} catch (final InterruptedException e) {
+			// Ignore
+		}
+		final Message msg = new TaskCompletedMessage(jobNo);
+		transmitter.addToBookkeepingQueue(request.source, msg);
 		return true;
 	}
 
@@ -295,8 +300,8 @@ RegistryEventHandler, EngineInterface {
 	 */
 	private boolean maintainOutstandingRequests() {
 		final long start = System.nanoTime();
-		final boolean progress = scheduler.maintainOutstandingRequests(
-				transmitter);
+		final boolean progress = scheduler
+				.maintainOutstandingRequests(transmitter);
 		final long duration = System.nanoTime() - start;
 		requestsHandlingTime += duration;
 		return progress;
@@ -306,11 +311,10 @@ RegistryEventHandler, EngineInterface {
 		s.println("message handling "
 				+ Utils.formatSeconds(1e-9 * receivedMessageHandlingTime)
 				+ " requests handling "
-				+ Utils.formatSeconds(1e-9 * requestsHandlingTime)
-				+ " idle "
+				+ Utils.formatSeconds(1e-9 * requestsHandlingTime) + " idle "
 				+ Utils.formatSeconds(1e-3 * idleTime));
 		receivedMessageQueueStatistics.printStatistics(s,
-		"receive queue linger time");
+				"receive queue linger time");
 	}
 
 	private synchronized void dumpEngineState() {
@@ -323,8 +327,7 @@ RegistryEventHandler, EngineInterface {
 		Globals.log.reportProgress("message handling "
 				+ Utils.formatSeconds(1e-9 * receivedMessageHandlingTime)
 				+ " requests handling "
-				+ Utils.formatSeconds(1e-9 * requestsHandlingTime)
-				+ " idle "
+				+ Utils.formatSeconds(1e-9 * requestsHandlingTime) + " idle "
 				+ Utils.formatSeconds(1e-3 * idleTime));
 		Globals.log.reportProgress("Engine: " + activeWorkers + " active, "
 				+ deletedPeers.size() + " deleted peers");
@@ -340,17 +343,19 @@ RegistryEventHandler, EngineInterface {
 				boolean sleptLong = false;
 				boolean progress;
 				do {
+					// Keep doing bookkeeping chores until all is done.
 					final boolean progressIncoming = handleIncomingMessages();
 					final boolean progressPeerChurn = registerNewAndDeletedPeers();
 					final boolean progressRequests = maintainOutstandingRequests();
-					progress = progressIncoming | progressPeerChurn
-					| progressRequests;
+					final boolean progressWork = handleAWorkRequest();
+					progress = progressIncoming || progressPeerChurn
+							|| progressRequests || progressWork;
 					if (Settings.TraceDetailedProgress) {
 						if (progress) {
 							Globals.log.reportProgress("EE p=true i="
 									+ progressIncoming + " c="
 									+ progressPeerChurn + " r="
-									+ progressRequests);
+									+ progressRequests + " w=" + progressWork);
 							if (progressIncoming) {
 								receivedMessageQueue.printCounts();
 							}
@@ -362,23 +367,22 @@ RegistryEventHandler, EngineInterface {
 				} while (progress);
 				synchronized (this) {
 					final boolean messageQueueIsEmpty = receivedMessageQueue
-					.isEmpty();
-					final boolean noRequestsToFulfill = !handleAWorkRequest();
+							.isEmpty();
 					final boolean noRequestsToSubmit = !scheduler
-					.requestsToSubmit();
+							.requestsToSubmit();
 					if (!stopped.isSet() && messageQueueIsEmpty
 							&& newPeers.isEmpty() && deletedPeers.isEmpty()
-							&& noRequestsToFulfill && noRequestsToSubmit) {
+							&& noRequestsToSubmit && workQueue.isEmpty()) {
 						try {
 							final long sleepStartTime = System
-							.currentTimeMillis();
+									.currentTimeMillis();
 							if (Settings.TraceEngine) {
 								Globals.log
-								.reportProgress("Main loop: waiting");
+										.reportProgress("Main loop: waiting");
 							}
 							this.wait(sleepTime);
 							final long sleepInterval = System
-							.currentTimeMillis() - sleepStartTime;
+									.currentTimeMillis() - sleepStartTime;
 							idleTime += sleepInterval;
 							sleptLong = sleepInterval > 9 * sleepTime / 10;
 						} catch (final InterruptedException e) {
