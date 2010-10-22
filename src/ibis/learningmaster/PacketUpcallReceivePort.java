@@ -8,7 +8,6 @@ import ibis.ipl.ReceivePort;
 
 import java.io.IOException;
 
-
 /**
  * A Receive port for packet reception.
  * 
@@ -50,6 +49,7 @@ class PacketUpcallReceivePort implements MessageUpcall {
      *             Thrown if for some reason the given message could not be
      *             read.
      */
+    @Override
     public void upcall(final ReadMessage msg) throws IOException {
         Message data;
         try {

@@ -2,12 +2,7 @@ package ibis.learningmaster;
 
 import ibis.ipl.IbisCreationFailedException;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Properties;
 
@@ -20,8 +15,7 @@ import java.util.Properties;
 class LearningMaster {
     private static void usage(final String msg, final String args[]) {
         System.err.println("Error: " + msg);
-        System.err
-                .println("Usage: LearningMaster <option>] ... <option>");
+        System.err.println("Usage: LearningMaster <option>] ... <option>");
         System.err.println("Where <option> is:");
         System.err
                 .println(" --dummyfile\tShare a dummy file instead of a real one");
@@ -60,7 +54,7 @@ class LearningMaster {
             }
         }
         try {
-            final Engine e = new Engine( helper);
+            final Engine e = new Engine(helper);
             e.start();
             e.join();
         } catch (final IbisCreationFailedException e) {
@@ -71,6 +65,9 @@ class LearningMaster {
             System.exit(2);
         } catch (final InterruptedException e) {
             System.err.println("Main thread got interrupt");
+            e.printStackTrace();
+        } catch (final IOException e) {
+            System.err.println("I/O error");
             e.printStackTrace();
         }
     }
