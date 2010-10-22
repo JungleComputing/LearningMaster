@@ -27,18 +27,20 @@ class Settings {
 	/** How many cache accesses unused before the entry is evicted. */
 	static final int CONNECTION_CACHE_MAXIMAL_UNUSED_COUNT = 2000;
 
-	static final boolean TraceNodeCreation = false;
-	static final boolean TraceEngine = false;
-	static final boolean TracePeers = false;
-	static final boolean TraceDetailedProgress = false;
-	static final int MAXIMAL_ENGINE_SLEEP_INTERVAL = 1000;
-	static final boolean TraceTransmitter = false;
-	static final boolean TraceReceiver = false;
-	static final boolean TraceSends = false;
-	static final boolean TraceTransmitterLoop = false;
+	static final boolean TraceNodeCreation = true;
+	static final boolean TraceEngine = true;
+	static final boolean TracePeers = true;
+	static final boolean TraceDetailedProgress = true;
+	static final boolean TraceTransmitter = true;
+	static final boolean TraceReceiver = true;
+	static final boolean TraceSends = true;
+	static final boolean TraceTransmitterLoop = true;
+	static final boolean TraceWorker = true;
 
-	static final int TASK_COUNT = 10000;
+	static final int MAXIMAL_ENGINE_SLEEP_INTERVAL = 2000;
 
-	// 2 minutes
-	static final int TASK_DURATION = 1000*60*2;
+	static final int TASK_COUNT = 20;
+
+	// 5 seconds
+	static final int TASK_DURATION = 1000 * 5;
 }

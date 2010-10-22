@@ -62,6 +62,11 @@ class Engine extends Thread implements PacketReceiveListener,
 		transmitter.start();
 		registry.enableEvents();
 		receivePort.enable();
+		if (!isMaster) {
+			// Tell the master we're ready.
+			transmitter.addToBookkeepingQueue(masterIdentifier,
+					new RegisterWorkerMessage());
+		}
 		if (Settings.TraceNodeCreation) {
 			Globals.log.reportProgress("Created ibis " + myIbis + " "
 					+ Utils.getPlatformVersion() + " host "
@@ -257,6 +262,8 @@ class Engine extends Thread implements PacketReceiveListener,
 		boolean progress = false;
 		while (true) {
 			final Message msg = receivedMessageQueue.getNext();
+			Globals.log.reportProgress("Get incoming message from queue: "
+					+ msg);
 			if (msg == null) {
 				break;
 			}
@@ -281,14 +288,22 @@ class Engine extends Thread implements PacketReceiveListener,
 		final RequestMessage request = workQueue.poll();
 
 		if (request == null) {
-			// No requests.
+			if (Settings.TraceWorker) {
+				Globals.log.reportProgress("Work queue is empty");
+			}
 			return false;
 		}
 		final int jobNo = request.jobNo;
+		if (Settings.TraceWorker) {
+			Globals.log.reportProgress("Starting execution of job " + jobNo);
+		}
 		try {
 			Thread.sleep(Settings.TASK_DURATION);
 		} catch (final InterruptedException e) {
 			// Ignore
+		}
+		if (Settings.TraceWorker) {
+			Globals.log.reportProgress("Ended execution of job " + jobNo);
 		}
 		final Message msg = new TaskCompletedMessage(jobNo);
 		transmitter.addToBookkeepingQueue(request.source, msg);
@@ -402,12 +417,12 @@ class Engine extends Thread implements PacketReceiveListener,
 		} finally {
 			transmitter.setShuttingDown();
 			scheduler.shutdown();
+			transmitter.setStopped();
 			try {
 				transmitter.join(Settings.TRANSMITTER_SHUTDOWN_TIMEOUT);
 			} catch (final InterruptedException e) {
 				// ignore.
 			}
-			transmitter.setStopped();
 			try {
 				localIbis.end();
 			} catch (final IOException x) {

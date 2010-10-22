@@ -15,10 +15,6 @@
             description="Build build all sources"
             depends="clean,compile,javadoc" />
 
-    <target name="test"
-            description="Run tests"
-            depends="workertest" />
-
     <property name="src" location="src" />
     <property name="tmp" location="tmp" />
     <property name="lib" location="lib" />

@@ -6,12 +6,12 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 
 /**
- * Schedule tasks one by one on the available workers.
- * Note that there is always at most one outstanding task. This is not realistic, but for
- * the purposes of learning behavior it is simpler.
+ * Schedule tasks one by one on the available workers. Note that there is always
+ * at most one outstanding task. This is not realistic, but for the purposes of
+ * learning behavior it is simpler.
  * 
  * @author Kees van Reeuwijk
- *
+ * 
  */
 class RoundRobinScheduler implements Scheduler {
 	private final ArrayList<IbisIdentifier> peers = new ArrayList<IbisIdentifier>();
@@ -19,7 +19,7 @@ class RoundRobinScheduler implements Scheduler {
 	private final TaskSet taskSet;
 	private final OutstandingRequestList outstandingRequests = new OutstandingRequestList();
 
-	RoundRobinScheduler(final int tasks){
+	RoundRobinScheduler(final int tasks) {
 		taskSet = new TaskSet(tasks);
 	}
 
@@ -46,7 +46,9 @@ class RoundRobinScheduler implements Scheduler {
 
 	/**
 	 * Adds the given peer to our list of workers.
-	 * @param peer The worker to add.
+	 * 
+	 * @param peer
+	 *            The worker to add.
 	 */
 	@Override
 	public void peerHasJoined(final IbisIdentifier peer) {
@@ -71,28 +73,28 @@ class RoundRobinScheduler implements Scheduler {
 	public void returnTask(final int id) {
 		taskSet.add(id);
 		final boolean removed = outstandingRequests.removeTask(id);
-		if(!removed){
-			Globals.log.reportInternalError("Task " + id + " was returned, but was not outstanding");
+		if (!removed) {
+			Globals.log.reportInternalError("Task " + id
+					+ " was returned, but was not outstanding");
 		}
 	}
 
 	@Override
-	public boolean maintainOutstandingRequests(
-			final Transmitter transmitter) {
-		if(!outstandingRequests.isEmpty()){
+	public boolean maintainOutstandingRequests(final Transmitter transmitter) {
+		if (!outstandingRequests.isEmpty()) {
 			// There already is an outstanding request.
 			return false;
 		}
-		if(taskSet.isEmpty()){
+		if (taskSet.isEmpty()) {
 			// No more tasks to submit.
 			return false;
 		}
-		if(peers.isEmpty()){
+		if (peers.isEmpty()) {
 			// There are no peers to submit tasks to.
 			return false;
 		}
 		final int task = taskSet.getNextTask();
-		if(nextPeer>peers.size()){
+		if (nextPeer >= peers.size()) {
 			nextPeer = 0;
 		}
 		final IbisIdentifier worker = peers.get(nextPeer);
