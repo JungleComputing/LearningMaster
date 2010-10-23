@@ -1,7 +1,7 @@
 package ibis.learningmaster;
 
 class EstimatingLearner {
-    private static final int WORKERS = 6;
+    private static final int WORKERS = 20;
 
     private static class Worker {
         private final double average;
@@ -29,35 +29,15 @@ class EstimatingLearner {
             performance.addSample(v);
         }
 
-        public void printStatistics() {
-            performance.printStatistics();
+        public void printStatistics(String lbl) {
+            performance.printStatistics(lbl);
         }
     }
 
     private static final Worker workers[] = new Worker[WORKERS];
     private static final WorkerEstimator workerEstimators[] = new WorkerEstimator[WORKERS];
 
-    @SuppressWarnings("synthetic-access")
-    private static void runExperiment(double av, int jobCount) {
-        for (int i = 0; i < WORKERS; i++) {
-            double v = av;
-            if (i == 1) {
-                v = 0.9 * av;
-            }
-            workers[i] = new Worker(v, 0.01 * av);
-            workerEstimators[i] = new WorkerEstimator();
-            workerEstimators[i].addSample(av);
-        }
-
-        for (int i = 0; i < jobCount; i++) {
-            submitAJob(workers, workerEstimators);
-        }
-        for (int i = 0; i < workerEstimators.length; i++) {
-            workerEstimators[i].printStatistics();
-        }
-    }
-
-    private static void submitAJob(Worker[] wl, WorkerEstimator[] wel) {
+    private static double submitAJob(Worker[] wl, WorkerEstimator[] wel) {
         double bestOffer = Double.MAX_VALUE;
         int bestWorker = -1;
         for (int i = 0; i < wl.length; i++) {
@@ -71,9 +51,33 @@ class EstimatingLearner {
         final double resultValue = wl[bestWorker].getValue();
         System.out.println("Worker " + bestWorker + " -> " + resultValue);
         wel[bestWorker].addSample(resultValue);
+        return resultValue;
+    }
+
+    @SuppressWarnings("synthetic-access")
+    private static void runExperiment(double av, int jobCount) {
+        for (int i = 0; i < WORKERS; i++) {
+            double v = av;
+            if ((i % 4) == 1) {
+                v = 0.2 * av;
+            } else if ((i % 4) == 0) {
+                v = 20 * av;
+            }
+            workers[i] = new Worker(v, 0.01 * v);
+            workerEstimators[i] = new WorkerEstimator();
+            workerEstimators[i].addSample(0);
+        }
+        double cost = 0;
+        for (int i = 0; i < jobCount; i++) {
+            cost += submitAJob(workers, workerEstimators);
+        }
+        for (int i = 0; i < workerEstimators.length; i++) {
+            workerEstimators[i].printStatistics(Integer.toString(i));
+        }
+        System.out.format("Average cost: %.3g\n", cost / jobCount);
     }
 
     public static void main(String args[]) {
-        runExperiment(20.0, 1000);
+        runExperiment(100.0, 10000);
     }
 }

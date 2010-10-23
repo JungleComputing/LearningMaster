@@ -41,7 +41,8 @@ class Estimator {
     // FIXME: this is just an intuitive approximation of a likely values comp.
     double getLikelyError() {
         final double av = sum / sampleCount;
-        return getStdDev() + Math.sqrt((10 * av) / sampleCount);
+        // return getStdDev() + Math.sqrt((10 * av) / sampleCount);
+        return getStdDev() + (av / Math.sqrt(sampleCount));
     }
 
     private static double getLikelyValue(double average, double stdDev) {
@@ -54,10 +55,8 @@ class Estimator {
             est.addSample(v);
         }
         final double average = est.getAverage();
-        final double stdDev = est.getStdDev();
         final double err = est.getLikelyError();
-        System.out.println(Arrays.toString(l) + " average=" + average
-                + " stdDev=" + stdDev + " likely error=" + err);
+        est.printStatistics(null);
 
         System.out.print("  likely values:");
         for (int i = 0; i < 15; i++) {
@@ -79,11 +78,15 @@ class Estimator {
         return getLikelyValue(average, err);
     }
 
-    void printStatistics() {
+    void printStatistics(String lbl) {
         final double average = getAverage();
         final double stdDev = getStdDev();
         final double err = getLikelyError();
-        System.out.println("average=" + average + " stdDev=" + stdDev
-                + " likely error=" + err);
+        if (lbl != null) {
+            System.out.print(lbl);
+            System.out.print(": ");
+        }
+        System.out.println("samples=" + sampleCount + " average=" + average
+                + " stdDev=" + stdDev + " likely error=" + err);
     }
 }
