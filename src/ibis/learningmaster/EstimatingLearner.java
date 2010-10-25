@@ -21,6 +21,11 @@ class EstimatingLearner {
     private static class WorkerEstimator {
         private final Estimator performance = new Estimator();
 
+        WorkerEstimator() {
+            // Start with a very optimistic estimate to avoid corner cases
+            performance.addSample(0);
+        }
+
         public double getLikelyValue() {
             return performance.getLikelyValue();
         }
@@ -37,7 +42,8 @@ class EstimatingLearner {
     private static final Worker workers[] = new Worker[WORKERS];
     private static final WorkerEstimator workerEstimators[] = new WorkerEstimator[WORKERS];
 
-    private static double submitAJob(Worker[] wl, WorkerEstimator[] wel) {
+    private static double submitAJob(boolean verbose, Worker[] wl,
+            WorkerEstimator[] wel) {
         double bestOffer = Double.MAX_VALUE;
         int bestWorker = -1;
         for (int i = 0; i < wl.length; i++) {
@@ -49,35 +55,57 @@ class EstimatingLearner {
             }
         }
         final double resultValue = wl[bestWorker].getValue();
-        System.out.println("Worker " + bestWorker + " -> " + resultValue);
+        if (verbose) {
+            System.out.println("Worker " + bestWorker + " -> " + resultValue);
+        }
         wel[bestWorker].addSample(resultValue);
         return resultValue;
     }
 
-    @SuppressWarnings("synthetic-access")
-    private static void runExperiment(double av, int jobCount) {
+    private static void runExperiment(boolean verbose, double fast,
+            double normal, double slow, double stddev, int jobCount) {
         for (int i = 0; i < WORKERS; i++) {
-            double v = av;
+            double v = normal;
             if ((i % 4) == 1) {
-                v = 0.2 * av;
+                v = fast;
             } else if ((i % 4) == 0) {
-                v = 20 * av;
+                v = slow;
             }
-            workers[i] = new Worker(v, 0.01 * v);
+            workers[i] = new Worker(v, stddev * v);
             workerEstimators[i] = new WorkerEstimator();
-            workerEstimators[i].addSample(0);
         }
         double cost = 0;
         for (int i = 0; i < jobCount; i++) {
-            cost += submitAJob(workers, workerEstimators);
+            cost += submitAJob(verbose, workers, workerEstimators);
         }
-        for (int i = 0; i < workerEstimators.length; i++) {
-            workerEstimators[i].printStatistics(Integer.toString(i));
+        if (verbose) {
+            for (int i = 0; i < workerEstimators.length; i++) {
+                workerEstimators[i].printStatistics(Integer.toString(i));
+            }
+            System.out.format("Average cost: %.3g\n", cost / jobCount);
+        } else {
+            System.out.println((fast / normal) + " " + (cost / jobCount));
         }
-        System.out.format("Average cost: %.3g\n", cost / jobCount);
+    }
+
+    // - sweep advantage of best worker from 0.1 to 0.9
+    private static void generatePoints(double slowFactor) {
+        final double advantages[] = { 0.01, 0.1, 0.25, 0.5, 0.7, 0.9, 0.95 };
+        final int SAMPLES = 20;
+        final double fast = 100;
+
+        for (final double a : advantages) {
+            final double normal = fast / a;
+            final double slow = slowFactor * normal;
+
+            for (int sample = 0; sample < SAMPLES; sample++) {
+                runExperiment(false, fast, normal, slow, 0.01, 30000);
+            }
+        }
     }
 
     public static void main(String args[]) {
-        runExperiment(100.0, 10000);
+        // runExperiment(true, 0.2, 100.0, 10000);
+        generatePoints(10);
     }
 }
