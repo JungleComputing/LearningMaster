@@ -29,7 +29,8 @@ class GaussianEstimator implements EstimatorInterface {
 
 	// FIXME: this is just an intuitive approximation of a likely values comp.
 	double getLikelyError() {
-		return getStdDev() + average / Math.sqrt(sampleCount);
+		final double stdDev = getStdDev();
+		return stdDev + average / Math.sqrt(sampleCount);
 	}
 
 	private static double getLikelyValue(final double average,
@@ -56,9 +57,26 @@ class GaussianEstimator implements EstimatorInterface {
 	public static void main(final String args[]) {
 		calculate(new double[] { 42.0 });
 		calculate(new double[] { 4, 9, 11, 12, 17, 5, 8, 12, 14 });
-		calculate(new double[] { 0, 0, 12, 12 });
+		calculate(new double[] { 0, 0, 12, 12, 6 });
 		calculate(new double[] { 13.0, 17.1, 15.6, 22.1, 14.1, 11.2, 14.1,
 				12.4, 29.3 });
+		calculate(new double[] { 13.0, 17.1, 15.6, 22.1, 14.1, 11.2, 14.1,
+				12.4, 29.3, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5,
+				16.5, 16.5, 16.5, 16.5, });
 	}
 
 	@Override
