@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Properties;
 
 /**
- * Main class of an arnold peer.
+ * Main class of a learning master dispatcher.
  * 
  * @author Kees van Reeuwijk
  * 
