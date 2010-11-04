@@ -32,6 +32,9 @@ class ExponentialDecayEstimator implements EstimatorInterface {
 
 	@Override
 	public double getPessimisticEstimate() {
+		if (sampleCount < 2) {
+			return Double.POSITIVE_INFINITY;
+		}
 		return average + Math.sqrt(variance);
 	}
 

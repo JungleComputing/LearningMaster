@@ -93,8 +93,8 @@ class StochasticLearningMaster {
 		private int maxQueueLength = 0;
 
 		static EstimatorInterface buildEstimator() {
-			return new ExponentialDecayEstimator();
-			// return new GaussianEstimator();
+			// return new ExponentialDecayEstimator(0.1);
+			return new GaussianEstimator();
 		}
 
 		WorkerEstimator(final String label) {
@@ -123,7 +123,11 @@ class StochasticLearningMaster {
 			double t = 0;
 			// FIXME: account for time the first job
 			// is already busy.
-			t = queueLength * performance.getPessimisticEstimate();
+			if (queueLength > 0) {
+				final double pessimisticEstimate = performance
+						.getPessimisticEstimate();
+				t = queueLength * pessimisticEstimate;
+			}
 			t += Math.max(0, performance.getLikelyValue());
 			return t;
 		}
@@ -155,16 +159,19 @@ class StochasticLearningMaster {
 		for (int i = 0; i < workerEstimators.length; i++) {
 			final WorkerEstimator e = workerEstimators[i];
 			final double t = e.estimateCompletionTime();
-			System.out.print("Estimated completion time on " + e.label + ": "
-					+ t + " stats: ");
-			e.printStatistics(System.out, 0);
+			if (false) {
+				System.out.print("Estimated completion time on " + e.label
+						+ ": " + t + " Queue length=" + e.queueLength
+						+ " stats: ");
+				e.printStatistics(System.out, 0);
+			}
 			if (t < bestCompletionTime) {
 				bestWorker = i;
 				bestCompletionTime = t;
 			}
 		}
 		final WorkerEstimator est = workerEstimators[bestWorker];
-		System.out.println("Best Worker: " + est.label);
+		// System.out.println("Best Worker: " + est.label);
 		est.registerQueuedJob(now);
 		workers[bestWorker].executeJob(est);
 	}
@@ -310,14 +317,14 @@ class StochasticLearningMaster {
 	}
 
 	public static void main(final String args[]) {
-		final StochasticLearningMaster m = new StochasticLearningMaster(true);
+		final StochasticLearningMaster m = new StochasticLearningMaster(false);
 		if (false) {
 			m.runNormalSlowdownExperiments();
 			m.runStdDevExperiments();
 			m.runSampleCountExperiments();
 		} else {
-			m.runExperiment(System.out, "test", true, 50.1, 0 * STDDEV, 50,
-					100, 500, 0.01 * STDDEV, 10000);
+			m.runExperiment(System.out, "test", true, 25.1, 1, 50, 100, 500, 2,
+					200000);
 		}
 	}
 }
