@@ -2,17 +2,17 @@ package ibis.learningmaster;
 
 import java.util.Random;
 
-class GaussianSource {
+class ZeroClampedGaussianSource {
     private final Random rng = new Random();
     private final double mean;
     private final double stdDev;
 
-    GaussianSource(double mean, double stdDev) {
+    ZeroClampedGaussianSource(double mean, double stdDev) {
         this.mean = mean;
         this.stdDev = stdDev;
     }
 
     double next() {
-        return mean + rng.nextGaussian() * stdDev;
+        return Math.max(0, mean + rng.nextGaussian() * stdDev);
     }
 }

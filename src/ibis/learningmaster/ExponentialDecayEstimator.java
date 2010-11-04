@@ -22,12 +22,17 @@ class ExponentialDecayEstimator implements EstimatorInterface {
         return average;
     }
 
-    double getStdDev() {
+    @Override
+    public double getPessimisticEstimate() {
+        return average + Math.sqrt(variance);
+    }
+
+    private double getStdDev() {
         return Math.sqrt(variance);
     }
 
     // FIXME: this is just an intuitive approximation of a likely values comp.
-    double getLikelyError() {
+    private double getLikelyError() {
         // return getStdDev() + average / Math.sqrt(sampleCount);
         return getStdDev() / (1 - alpha);
     }

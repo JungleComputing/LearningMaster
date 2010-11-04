@@ -39,7 +39,7 @@ class StochasticLearningDispatcher {
         }
 
         public double getLikelyValue() {
-            return performance.getLikelyValue();
+            return Math.max(0, performance.getLikelyValue());
         }
 
         public void addSample(final double v) {

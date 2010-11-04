@@ -38,6 +38,14 @@ class GaussianEstimator implements EstimatorInterface {
         return average + stdDev * Globals.rng.nextGaussian();
     }
 
+    @Override
+    public double getPessimisticEstimate() {
+        if (sampleCount < 2) {
+            return 10 * average;
+        }
+        return average + Math.sqrt(S / (sampleCount - 1));
+    }
+
     private static void calculate(final double l[]) {
         final GaussianEstimator est = new GaussianEstimator();
         for (final double v : l) {

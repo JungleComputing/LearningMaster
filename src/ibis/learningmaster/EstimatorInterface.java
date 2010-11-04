@@ -40,4 +40,6 @@ interface EstimatorInterface {
 
     String getName();
 
+    double getPessimisticEstimate();
+
 }
