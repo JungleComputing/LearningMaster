@@ -15,4 +15,9 @@ class ZeroClampedGaussianSource {
     double next() {
         return Math.max(0, mean + rng.nextGaussian() * stdDev);
     }
+
+    @Override
+    public String toString() {
+        return String.format("mean=%.3g stdDev=%.3g", mean, stdDev);
+    }
 }

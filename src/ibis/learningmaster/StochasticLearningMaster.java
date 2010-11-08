@@ -53,6 +53,7 @@ class StochasticLearningMaster {
         ZeroClampedGaussianSource workTimeGenerator;
         private double busyUntilTime;
         private final String label;
+        private double totalIdleTime = 0.0;
 
         Worker(final double average, final double stdDev, final String label) {
             super();
@@ -67,8 +68,15 @@ class StochasticLearningMaster {
         @SuppressWarnings("synthetic-access")
         void executeJob(final WorkerEstimator est) {
             final double t = workTimeGenerator.next();
-            final double startTime = Math.max(now, busyUntilTime);
+            final double startTime;
+            if (now > busyUntilTime) {
+                startTime = now;
+                totalIdleTime += now - busyUntilTime;
+            } else {
+                startTime = busyUntilTime;
+            }
             final double ct = startTime + t;
+            busyUntilTime = ct;
             if (verbose) {
                 System.out.println("New job for worker " + label
                         + ": startTime=" + startTime + " duration=" + t
@@ -81,6 +89,13 @@ class StochasticLearningMaster {
         @Override
         public String toString() {
             return label;
+        }
+
+        void printStatistics(PrintStream s, double totalTime) {
+            final long perc = Math.round(100 * totalIdleTime / totalTime);
+            s.format("%-4s: %s total idle time: %s (%d%%)\n", label,
+                    workTimeGenerator.toString(),
+                    Utils.formatSeconds(totalIdleTime), perc);
         }
     }
 
@@ -189,20 +204,18 @@ class StochasticLearningMaster {
 
     private void runExperiment(final PrintStream stream, final String lbl,
             final boolean printEndStats, final double arrivalRate,
-            final double arrivalStdDev, final double fast, final double normal,
-            final double slow, final double stddev, final int jobCount) {
+            final double arrivalStdDev, final double fast, final double slow,
+            final double stddev, final int jobCount) {
         final ZeroClampedGaussianSource jobIntervalGenerator = new ZeroClampedGaussianSource(
                 arrivalRate, arrivalStdDev);
         int submittedJobCount = 0;
         double totalExecutionTime = 0;
         // First, create some workers and worker estimators.
         for (int i = 0; i < WORKERS; i++) {
-            double v = normal;
-            if (i == 1) {
-                v = fast;
-            } else if (i == 2) {
-                v = slow;
-            }
+            final double d = slow - fast;
+            final double v = fast + ((double) i / (WORKERS - 1)) * d;
+            System.out.println("i=" + i + " v=" + v + " fast=" + fast
+                    + " slow=" + slow + " d=" + d);
             workers[i] = new Worker(v, stddev * v, "W" + i);
             workerEstimators[i] = new WorkerEstimator("W" + i);
         }
@@ -242,11 +255,12 @@ class StochasticLearningMaster {
         }
         if (printEndStats) {
             for (int i = 0; i < workerEstimators.length; i++) {
-                workerEstimators[i].printStatistics(System.out, now);
+                workers[i].printStatistics(stream, now);
+                workerEstimators[i].printStatistics(stream, now);
             }
-            System.out
-                    .format("Fast: %3g normal: %3g slow: %3g  average execution time: %3g\n",
-                            fast, normal, slow, (totalExecutionTime / jobCount));
+            System.out.format(
+                    "Fast: %3g slow: %3g  average execution time: %3g\n", fast,
+                    slow, (totalExecutionTime / jobCount));
         } else {
             stream.println(lbl + " " + (totalExecutionTime / jobCount));
         }
@@ -279,7 +293,7 @@ class StochasticLearningMaster {
             for (int sample = 0; sample < SAMPLES; sample++) {
                 final String lbl = Double.toString(normal);
                 runExperiment(stream, lbl, false, 0.9 * fast, STDDEV, fast,
-                        normal, slow, STDDEV, JOBCOUNT);
+                        slow, STDDEV, JOBCOUNT);
             }
         }
         stream.close();
@@ -300,7 +314,7 @@ class StochasticLearningMaster {
             for (int sample = 0; sample < SAMPLES; sample++) {
                 final String lbl = Double.toString(s * normal);
                 runExperiment(stream, lbl, false, fast * 0.9, STDDEV, fast,
-                        normal, slow, s, JOBCOUNT);
+                        slow, s, JOBCOUNT);
             }
         }
         stream.close();
@@ -322,7 +336,7 @@ class StochasticLearningMaster {
             for (int sample = 0; sample < SAMPLES; sample++) {
                 final String lbl = Integer.toString(jobCount);
                 runExperiment(stream, lbl, false, 0.9 * fast, STDDEV, fast,
-                        normal, slow, STDDEV, jobCount);
+                        slow, STDDEV, jobCount);
             }
         }
         stream.close();
@@ -336,8 +350,8 @@ class StochasticLearningMaster {
             m.runStdDevExperiments();
             m.runSampleCountExperiments();
         } else {
-            m.runExperiment(System.out, "test", true, 50, 0.5, 100, 300, 2500,
-                    0.1, 200000);
+            m.runExperiment(System.out, "test", true, 30, 0.0, 100, 2000, 0.0,
+                    200000);
         }
     }
 }
