@@ -108,8 +108,8 @@ class ExponentialDecayEstimator implements EstimatorInterface {
             s.print(lbl);
             s.print(": ");
         }
-        s.println("samples=" + sampleCount + " average=" + average + " stdDev="
-                + stdDev + " likely error=" + err);
+        s.format("samples=%d average=%.3g stdDev=%.3g likely error=%.3g\n",
+                sampleCount, average, stdDev, err);
     }
 
     @Override
@@ -120,5 +120,10 @@ class ExponentialDecayEstimator implements EstimatorInterface {
     @Override
     public String getName() {
         return "exponential-decay";
+    }
+
+    @Override
+    public int getSampleCount() {
+        return sampleCount;
     }
 }

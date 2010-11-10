@@ -115,4 +115,9 @@ class GaussianEstimator implements EstimatorInterface {
     public String getName() {
         return "gaussian";
     }
+
+    @Override
+    public int getSampleCount() {
+        return sampleCount;
+    }
 }

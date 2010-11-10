@@ -13,6 +13,7 @@ class StochasticLearningMaster {
     private static final double STDDEV = 0.20;
     private final EventQueue q;
     private double now = 0;
+    private double totalCompletionTime = 0.0;
     private final boolean verbose;
 
     public StochasticLearningMaster(final boolean verbose) {
@@ -56,33 +57,37 @@ class StochasticLearningMaster {
         private double totalIdleTime = 0.0;
 
         Worker(final double average, final double stdDev, final String label) {
-            super();
             this.label = label;
             workTimeGenerator = new ZeroClampedGaussianSource(average, stdDev);
         }
 
         /**
          * Execute a job on this worker. We place an event on the event queue to
-         * mark the completion of this job. If the worker is
+         * mark the completion of this job.
          */
         @SuppressWarnings("synthetic-access")
         void executeJob(final WorkerEstimator est) {
-            final double t = workTimeGenerator.next();
+            final double duration = workTimeGenerator.next();
             final double startTime;
+
             if (now > busyUntilTime) {
+                // The worker currently isn't busy.
                 startTime = now;
                 totalIdleTime += now - busyUntilTime;
             } else {
+                // The worker is busy; execution will be delayed.
                 startTime = busyUntilTime;
             }
-            final double ct = startTime + t;
-            busyUntilTime = ct;
+            final double completionTime = startTime + duration;
+            busyUntilTime = completionTime;
+            totalCompletionTime += (completionTime - now);
             if (verbose) {
                 System.out.println("New job for worker " + label
-                        + ": startTime=" + startTime + " duration=" + t
-                        + " endTime=" + ct);
+                        + ": startTime=" + startTime + " duration=" + duration
+                        + " completionTime=" + completionTime);
             }
-            final JobCompletedEvent e = new JobCompletedEvent(ct, t, est);
+            final JobCompletedEvent e = new JobCompletedEvent(completionTime,
+                    duration, est);
             q.addEvent(e);
         }
 
@@ -92,6 +97,7 @@ class StochasticLearningMaster {
         }
 
         void printStatistics(PrintStream s, double totalTime) {
+            totalIdleTime += now - busyUntilTime;
             final long perc = Math.round(100 * totalIdleTime / totalTime);
             s.format("%-4s: %s total idle time: %s (%d%%)\n", label,
                     workTimeGenerator.toString(),
@@ -140,7 +146,8 @@ class StochasticLearningMaster {
             if (queueLength > 0) {
                 final double pessimisticEstimate = performance
                         .getPessimisticEstimate();
-                t = queueLength * pessimisticEstimate;
+                t = queueLength * pessimisticEstimate
+                        * Math.pow(1.05, queueLength);
                 // Take into account the time that
                 // The job is already running.
                 t -= (now - lastJobStart);
@@ -214,8 +221,6 @@ class StochasticLearningMaster {
         for (int i = 0; i < WORKERS; i++) {
             final double d = slow - fast;
             final double v = fast + ((double) i / (WORKERS - 1)) * d;
-            System.out.println("i=" + i + " v=" + v + " fast=" + fast
-                    + " slow=" + slow + " d=" + d);
             workers[i] = new Worker(v, stddev * v, "W" + i);
             workerEstimators[i] = new WorkerEstimator("W" + i);
         }
@@ -258,9 +263,10 @@ class StochasticLearningMaster {
                 workers[i].printStatistics(stream, now);
                 workerEstimators[i].printStatistics(stream, now);
             }
-            System.out.format(
-                    "Fast: %3g slow: %3g  average execution time: %3g\n", fast,
-                    slow, (totalExecutionTime / jobCount));
+            System.out
+                    .format("Fast: %3g slow: %3g  run time=%.3f average execution time: %3g average completion time: %3g\n",
+                            fast, slow, now, (totalExecutionTime / jobCount),
+                            (totalCompletionTime / jobCount));
         } else {
             stream.println(lbl + " " + (totalExecutionTime / jobCount));
         }
@@ -350,7 +356,7 @@ class StochasticLearningMaster {
             m.runStdDevExperiments();
             m.runSampleCountExperiments();
         } else {
-            m.runExperiment(System.out, "test", true, 30, 0.0, 100, 2000, 0.0,
+            m.runExperiment(System.out, "test", true, 0.2, 0.125, 1, 20, 0.4,
                     200000);
         }
     }

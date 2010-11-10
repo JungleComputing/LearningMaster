@@ -5,7 +5,7 @@ import java.util.PriorityQueue;
 class EventQueue {
     private final PriorityQueue<Event> q = new PriorityQueue<EventQueue.Event>();
     private final boolean verbose;
-    private final double lastRetrievedEventTime = -1;
+    private double lastRetrievedEventTime = -1;
 
     EventQueue(boolean verbose) {
         this.verbose = verbose;
@@ -67,9 +67,10 @@ class EventQueue {
         }
         if (e.time < lastRetrievedEventTime) {
             System.out.println("INTERNAL ERROR: events out of order: event "
-                    + e + " has earlier time than last retreived time "
+                    + e + " has earlier time than last retrieved time "
                     + lastRetrievedEventTime);
         }
+        lastRetrievedEventTime = e.time;
         return e;
     }
 }
