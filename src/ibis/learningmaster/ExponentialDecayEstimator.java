@@ -8,12 +8,21 @@ class ExponentialDecayEstimator implements EstimatorInterface {
     private final double alpha;
     private int sampleCount = 0;
 
-    public ExponentialDecayEstimator() {
-        this(0.25);
-    }
-
+    /**
+     * Constructs a new exponential decay estimator with the given decay factor.
+     * 
+     * @param alpha
+     *            The decay factor to use.
+     */
     public ExponentialDecayEstimator(final double alpha) {
         this.alpha = alpha;
+    }
+
+    /**
+     * Constructs a new exponential decay estimator with the decay factor 0.25.
+     */
+    public ExponentialDecayEstimator() {
+        this(0.25);
     }
 
     @Override
@@ -45,7 +54,6 @@ class ExponentialDecayEstimator implements EstimatorInterface {
 
     // FIXME: this is just an intuitive approximation of a likely values comp.
     private double getLikelyError() {
-        // return getStdDev() + average / Math.sqrt(sampleCount);
         return getStdDev() / (1 - alpha);
     }
 

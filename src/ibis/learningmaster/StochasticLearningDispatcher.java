@@ -194,7 +194,7 @@ class StochasticLearningDispatcher {
             runSampleCountExperiments();
 
         } else {
-            runExperiment(System.out, "test", false, true, 100, 500, 500,
+            runExperiment(System.out, "test", false, true, 100, 500, 800,
                     STDDEV, JOBCOUNT);
         }
     }
