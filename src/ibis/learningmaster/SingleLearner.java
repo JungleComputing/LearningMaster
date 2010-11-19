@@ -1,5 +1,8 @@
 package ibis.learningmaster;
 
+import ibis.steel.EstimatorInterface;
+import ibis.steel.ExponentialDecayEstimator;
+
 class SingleLearner {
 	private static final int SAMPLES = 300;
 

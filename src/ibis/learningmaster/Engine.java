@@ -28,7 +28,7 @@ class Engine extends Thread implements PacketReceiveListener,
 	private final ConcurrentLinkedQueue<IbisIdentifier> newPeers = new ConcurrentLinkedQueue<IbisIdentifier>();
 	private final ConcurrentLinkedQueue<RequestMessage> workQueue = new ConcurrentLinkedQueue<RequestMessage>();
 	private final PacketUpcallReceivePort receivePort;
-	final Ibis localIbis;
+	private final Ibis localIbis;
 	private int activeWorkers = 0;
 	private long receivedMessageHandlingTime = 0;
 	private long requestsHandlingTime = 0;
@@ -433,5 +433,10 @@ class Engine extends Thread implements PacketReceiveListener,
 		scheduler.printStatistics(Globals.log.getPrintStream());
 		transmitter.printStatistics(Globals.log.getPrintStream());
 		Utils.printThreadStats(Globals.log.getPrintStream());
+	}
+
+	@Override
+	public Ibis getLocalIbis() {
+		return localIbis;
 	}
 }
