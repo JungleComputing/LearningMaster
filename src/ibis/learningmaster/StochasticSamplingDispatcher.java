@@ -51,7 +51,7 @@ class StochasticSamplingDispatcher {
         }
 
         public void printStatistics(final PrintStream s, final String lbl) {
-            performance.printStatistics(s, performance.getName() + ": " + lbl);
+            s.println(lbl + ": " + performance.getStatisticsString());
         }
 
         static String getName() {

@@ -134,9 +134,8 @@ class StochasticLearningMaster {
 
         void printStatistics(final PrintStream s, final double totalTime) {
             final double qf = queueTime / totalTime;
-            performance
-                    .printStatistics(s, performance.getName() + ": " + label);
-            s.println(label + ": maxQLen=" + maxQueueLength + " qf=" + qf);
+            s.println(label + ": maxQLen=" + maxQueueLength + " qf=" + qf + " "
+                    + performance.getStatisticsString());
         }
 
         static String getName() {
