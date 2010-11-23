@@ -13,7 +13,7 @@
 
     <target name="build"
             description="Build build all sources"
-            depends="clean,compile,javadoc" />
+            depends="clean,compile" />
 
     <property name="src" location="src" />
     <property name="tmp" location="tmp" />

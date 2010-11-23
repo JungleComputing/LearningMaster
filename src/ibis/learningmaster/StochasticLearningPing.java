@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 class StochasticLearningPing extends Thread implements PacketReceiveListener,
 		EngineInterface, RegistryEventHandler {
-	private static final int PINGCOUNT = 30000;
+	private static final int PINGCOUNT = 10;
 	private final Transmitter transmitter;
 	private final ConcurrentLinkedQueue<IbisIdentifier> deletedPeers = new ConcurrentLinkedQueue<IbisIdentifier>();
 	private final ConcurrentLinkedQueue<IbisIdentifier> newPeers = new ConcurrentLinkedQueue<IbisIdentifier>();
