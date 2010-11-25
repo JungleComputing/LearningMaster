@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 class StochasticLearningPing extends Thread implements PacketReceiveListener,
         EngineInterface, RegistryEventHandler {
-    private static final int PINGCOUNT = 1000;
+    private static final int PINGCOUNT = 1000000;
     private final Transmitter transmitter;
     private final ConcurrentLinkedQueue<IbisIdentifier> deletedPeers = new ConcurrentLinkedQueue<IbisIdentifier>();
     private final ConcurrentLinkedQueue<IbisIdentifier> newPeers = new ConcurrentLinkedQueue<IbisIdentifier>();
@@ -83,7 +83,6 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
             boolean sendAnotherPing = false;
             final long t = arrivalTime - latestPingSentTime;
             final double v = t == 0 ? 1e-11 : 1e-9 * t;
-            System.out.println("Arrival time = " + t + " v=" + v);
             pingtimeEstimator.addSample(v);
             if (pingsToSend > 0) {
                 sendAnotherPing = true;
@@ -232,8 +231,6 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
         boolean progress = false;
         while (true) {
             final Message msg = receivedMessageQueue.getNext();
-            Globals.log.reportProgress("Get incoming message from queue: "
-                    + msg);
             if (msg == null) {
                 break;
             }

@@ -155,8 +155,6 @@ class Transmitter extends Thread {
 						final long sleepTime = shuttingDown ? 1 : retryQueue
 								.isEmpty() ? TRANSMITTER_WAKE_INTERVAL
 								: RETRY_WAKE_INTERVAL;
-						System.out.println("Transmitter: sleepTime="
-								+ sleepTime);
 						wait(sleepTime);
 						if (sentMessages) {
 							final long waitTime = System.nanoTime()

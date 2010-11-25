@@ -7,9 +7,9 @@ import java.io.Serializable;
 abstract class Message implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    protected volatile IbisIdentifier source;
+    protected transient IbisIdentifier source;
 
-    volatile long arrivalTime;
+    transient long arrivalTime;
 
     @Override
     public String toString() {
