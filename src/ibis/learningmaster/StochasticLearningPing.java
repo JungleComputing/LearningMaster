@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 class StochasticLearningPing extends Thread implements PacketReceiveListener,
         EngineInterface, RegistryEventHandler {
-    private static final int PINGCOUNT = 10;
+    private static final int PINGCOUNT = 1000;
     private final Transmitter transmitter;
     private final ConcurrentLinkedQueue<IbisIdentifier> deletedPeers = new ConcurrentLinkedQueue<IbisIdentifier>();
     private final ConcurrentLinkedQueue<IbisIdentifier> newPeers = new ConcurrentLinkedQueue<IbisIdentifier>();
@@ -68,7 +68,7 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
         }
 
         void registerSentPing() {
-            latestPingSentTime = System.currentTimeMillis();
+            latestPingSentTime = System.nanoTime();
         }
 
         void registerReceivedPing() {
@@ -82,7 +82,9 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
         boolean registerReceivedPingReply(final long arrivalTime) {
             boolean sendAnotherPing = false;
             final long t = arrivalTime - latestPingSentTime;
-            pingtimeEstimator.addSample(1e-3 * t);
+            final double v = t == 0 ? 1e-11 : 1e-9 * t;
+            System.out.println("Arrival time = " + t + " v=" + v);
+            pingtimeEstimator.addSample(v);
             if (pingsToSend > 0) {
                 sendAnotherPing = true;
                 pingsToSend--;
@@ -409,7 +411,7 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
         // We are not allowed to do I/O in this thread, and we shouldn't
         // take too much time, so put all messages in a local queue to be
         // handled by the main loop.
-        packet.arrivalTime = System.currentTimeMillis();
+        packet.arrivalTime = System.nanoTime();
         receivedMessageQueue.add(packet);
         if (Settings.TraceReceiver) {
             Globals.log.reportProgress("Added to receive queue: " + packet);
