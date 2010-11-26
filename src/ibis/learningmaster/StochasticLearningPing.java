@@ -8,6 +8,7 @@ import ibis.ipl.IbisIdentifier;
 import ibis.ipl.Registry;
 import ibis.ipl.RegistryEventHandler;
 import ibis.steel.Estimator;
+import ibis.steel.GaussianEstimator;
 import ibis.steel.LogGaussianEstimator;
 
 import java.io.File;
@@ -57,8 +58,10 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
         final IbisIdentifier id;
         private int pingsToSend;
         private int pingsToReceive;
-        private final Estimator pingtimeEstimator = new LogGaussianEstimator(
+        private final Estimator logPingtimeEstimator = new LogGaussianEstimator(
                 1e-3, 1e-1);
+        private final Estimator linPingtimeEstimator = new GaussianEstimator(
+                1e-3, 1e-3);
         private long latestPingSentTime;
 
         NodeAdministration(final IbisIdentifier id) {
@@ -83,7 +86,8 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
             boolean sendAnotherPing = false;
             final long t = arrivalTime - latestPingSentTime;
             final double v = t == 0 ? 1e-11 : 1e-9 * t;
-            pingtimeEstimator.addSample(v);
+            logPingtimeEstimator.addSample(v);
+            linPingtimeEstimator.addSample(v);
             if (pingsToSend > 0) {
                 sendAnotherPing = true;
                 pingsToSend--;
@@ -92,8 +96,9 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
         }
 
         void printStatistics(final PrintStream printStream) {
-            printStream.println(id.toString() + ": "
-                    + pingtimeEstimator.getStatisticsString());
+            printStream.println(id.toString() + ": log: "
+                    + logPingtimeEstimator.getStatisticsString() + " lin: "
+                    + linPingtimeEstimator.getStatisticsString());
         }
     }
 
@@ -180,10 +185,10 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
 
     public StochasticLearningPing() throws IbisCreationFailedException,
             IOException {
-        this.transmitter = new Transmitter(this);
+        transmitter = new Transmitter(this);
         final Properties ibisProperties = new Properties();
-        this.localIbis = IbisFactory.createIbis(ibisCapabilities,
-                ibisProperties, true, this, PacketSendPort.portType,
+        localIbis = IbisFactory.createIbis(ibisCapabilities, ibisProperties,
+                true, this, PacketSendPort.portType,
                 PacketUpcallReceivePort.portType);
         final Registry registry = localIbis.registry();
         final IbisIdentifier myIbis = localIbis.identifier();
@@ -478,7 +483,7 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
     @Override
     public void wakeEngineThread() {
         synchronized (this) {
-            this.notifyAll();
+            notifyAll();
         }
     }
 
