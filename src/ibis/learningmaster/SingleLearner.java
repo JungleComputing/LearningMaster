@@ -10,7 +10,7 @@ class SingleLearner {
         final ZeroClampedGaussianSource src = new ZeroClampedGaussianSource(
                 100, 5);
         // final EstimatorInterface estimator = new GaussianEstimator();
-        final Estimator estimator = new ExponentialDecayEstimator(0.1);
+        final Estimator estimator = new ExponentialDecayEstimator(0, 0, 0.1);
 
         for (int i = 1; i <= SAMPLES; i++) {
             final double v = src.next();

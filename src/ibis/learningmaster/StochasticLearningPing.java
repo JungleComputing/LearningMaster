@@ -8,6 +8,8 @@ import ibis.ipl.IbisIdentifier;
 import ibis.ipl.Registry;
 import ibis.ipl.RegistryEventHandler;
 import ibis.steel.Estimator;
+import ibis.steel.ExponentialDecayEstimator;
+import ibis.steel.ExponentialDecayLogEstimator;
 import ibis.steel.GaussianEstimator;
 import ibis.steel.LogGaussianEstimator;
 
@@ -58,10 +60,11 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
         final IbisIdentifier id;
         private int pingsToSend;
         private int pingsToReceive;
-        private final Estimator logPingtimeEstimator = new LogGaussianEstimator(
-                1e-3, 1e-1);
-        private final Estimator linPingtimeEstimator = new GaussianEstimator(
-                1e-3, 1e-3);
+        private final Estimator estimators[] = {
+                new LogGaussianEstimator(1e-3, 1e-1),
+                new GaussianEstimator(1e-3, 1e-3),
+                new ExponentialDecayLogEstimator(1e-3, 1e-1),
+                new ExponentialDecayEstimator(1e-3, 1e-3) };
         private long latestPingSentTime;
 
         NodeAdministration(final IbisIdentifier id) {
@@ -86,8 +89,9 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
             boolean sendAnotherPing = false;
             final long t = arrivalTime - latestPingSentTime;
             final double v = t == 0 ? 1e-11 : 1e-9 * t;
-            logPingtimeEstimator.addSample(v);
-            linPingtimeEstimator.addSample(v);
+            for (final Estimator e : estimators) {
+                e.addSample(v);
+            }
             if (pingsToSend > 0) {
                 sendAnotherPing = true;
                 pingsToSend--;
@@ -96,9 +100,11 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
         }
 
         void printStatistics(final PrintStream printStream) {
-            printStream.println(id.toString() + ": log: "
-                    + logPingtimeEstimator.getStatisticsString() + " lin: "
-                    + linPingtimeEstimator.getStatisticsString());
+            printStream.println(id.toString() + ":");
+            for (final Estimator e : estimators) {
+                printStream.println("  " + e.getName() + ": "
+                        + e.getStatisticsString());
+            }
         }
     }
 

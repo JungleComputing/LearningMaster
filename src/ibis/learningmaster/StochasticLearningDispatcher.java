@@ -29,7 +29,7 @@ class StochasticLearningDispatcher {
         private final Estimator performance = buildEstimator();
 
         static Estimator buildEstimator() {
-            return new ExponentialDecayEstimator();
+            return new ExponentialDecayEstimator(0, 0);
             // return new GaussianEstimator();
         }
 

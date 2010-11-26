@@ -117,7 +117,7 @@ class StochasticLearningMaster {
         private int maxQueueLength = 0;
 
         static Estimator buildEstimator() {
-            return new ExponentialDecayEstimator(0.1);
+            return new ExponentialDecayEstimator(0, 0, 0.1);
             // return new GaussianEstimator();
         }
 
