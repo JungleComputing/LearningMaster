@@ -3,13 +3,10 @@ package ibis.learningmaster;
 import ibis.steel.Estimator;
 import ibis.steel.ExponentialDecayEstimator;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.PrintStream;
 
 class StochasticLearningDispatcher {
     private static final int GENERATORS = 20;
-    private static final int SAMPLES = 10;
     private static int JOBCOUNT = 30000;
     private static final double STDDEV = 0.20;
 
@@ -49,10 +46,6 @@ class StochasticLearningDispatcher {
         public void printStatistics(final PrintStream s, final String lbl) {
             s.println(lbl + ": " + performance.getName() + ": "
                     + performance.getStatisticsString());
-        }
-
-        static String getName() {
-            return buildEstimator().getName();
         }
     }
 
@@ -111,92 +104,8 @@ class StochasticLearningDispatcher {
         }
     }
 
-    private static PrintStream openPrintFile(final String s) {
-        try {
-            return new PrintStream(new File(s));
-        } catch (final FileNotFoundException e) {
-            System.err.println("Cannot open file '" + s + "' for writing: "
-                    + e.getLocalizedMessage());
-            e.printStackTrace();
-            System.exit(1);
-            return null; // To satisfy the compiler.
-        }
-    }
-
-    private static void runNormalSlowdownExperiments() {
-        final double normalValues[] = { 110, 150, 200, 500, 1000, 2000, 5000,
-                10000 };
-        final double fast = 100;
-        final double slowFactor = 1;
-        PrintStream stream;
-        final String fnm = WorkerEstimator.getName() + "-normal-slowdown.data";
-        stream = openPrintFile(fnm);
-
-        for (final double normal : normalValues) {
-            final double slow = slowFactor * normal;
-
-            for (int sample = 0; sample < SAMPLES; sample++) {
-                final String lbl = Double.toString(normal);
-                runExperiment(stream, lbl, false, false, fast, normal, slow,
-                        STDDEV, JOBCOUNT);
-            }
-        }
-        stream.close();
-        System.out.println("Wrote file '" + fnm + "'");
-    }
-
-    private static void runStdDevExperiments() {
-        final double stddevs[] = { 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10 };
-        final double fast = 100;
-        final double normal = 5 * fast;
-        final double slow = normal;
-        PrintStream stream;
-        final String fnm = WorkerEstimator.getName() + "-stddev.data";
-        stream = openPrintFile(fnm);
-
-        for (final double s : stddevs) {
-
-            for (int sample = 0; sample < SAMPLES; sample++) {
-                final String lbl = Double.toString(s * normal);
-                runExperiment(stream, lbl, false, false, fast, normal, slow, s,
-                        JOBCOUNT);
-            }
-        }
-        stream.close();
-        System.out.println("Wrote file '" + fnm + "'");
-    }
-
-    private static void runSampleCountExperiments() {
-        final int samples[] = { 100, 200, 500, 1000, 2000, 5000, 10000, 20000,
-                50000, 100000 };
-        final double fast = 100;
-        final double normal = 10 * fast;
-        final double slow = normal;
-        PrintStream stream;
-        final String fnm = WorkerEstimator.getName() + "-samplecount.data";
-        stream = openPrintFile(fnm);
-
-        for (final int jobCount : samples) {
-
-            for (int sample = 0; sample < SAMPLES; sample++) {
-                final String lbl = Integer.toString(jobCount);
-                runExperiment(stream, lbl, false, false, fast, normal, slow,
-                        STDDEV, jobCount);
-            }
-        }
-        stream.close();
-        System.out.println("Wrote file '" + fnm + "'");
-    }
-
     public static void main(final String args[]) {
-        if (false) {
-            runNormalSlowdownExperiments();
-            runStdDevExperiments();
-            runSampleCountExperiments();
-
-        } else {
-            runExperiment(System.out, "test", false, true, 100, 500, 800,
-                    STDDEV, JOBCOUNT);
-        }
+        runExperiment(System.out, "test", false, true, 100, 500, 800, STDDEV,
+                JOBCOUNT);
     }
 }
