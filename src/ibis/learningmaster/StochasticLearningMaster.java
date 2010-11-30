@@ -188,7 +188,7 @@ class StochasticLearningMaster {
         for (int i = 0; i < workerEstimators.length; i++) {
             final WorkerEstimator e = workerEstimators[i];
             final double t = e.estimateCompletionTime(now);
-            if (false) {
+            if (Settings.TraceDetailedProgress) {
                 System.out.print("Estimated completion time on " + e.label
                         + ": " + t + " Queue length=" + e.queueLength
                         + " stats: ");
