@@ -41,20 +41,20 @@ class LearningMaster {
      *            The command-line arguments.
      */
     public static void main(final String[] args) {
-        boolean helper = false;
+        boolean isWorker = false;
 
         // First parse the command line.
         for (final String arg : args) {
             if (arg.startsWith("-D")) {
                 setPropertyOption(arg);
-            } else if (arg.equalsIgnoreCase("--helper")) {
-                helper = true;
+            } else if (arg.equalsIgnoreCase("--worker")) {
+                isWorker = true;
             } else if (arg.startsWith("--")) {
                 usage("Unknown option '" + arg + '\'', args);
             }
         }
         try {
-            final Engine e = new Engine(helper);
+            final MawEngine e = new MawEngine(isWorker);
             e.start();
             e.join();
         } catch (final IbisCreationFailedException e) {

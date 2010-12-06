@@ -51,7 +51,7 @@ class RoundRobinScheduler implements Scheduler {
 	 *            The worker to add.
 	 */
 	@Override
-	public void peerHasJoined(final IbisIdentifier peer) {
+	public void workerHasJoined(final IbisIdentifier peer) {
 		peers.add(peer);
 	}
 
@@ -100,7 +100,7 @@ class RoundRobinScheduler implements Scheduler {
 		final IbisIdentifier worker = peers.get(nextPeer);
 		nextPeer++;
 		outstandingRequests.add(worker, task);
-		final RequestMessage rq = new RequestMessage(task);
+		final ExecuteTaskMessage rq = new ExecuteTaskMessage(task);
 		transmitter.addToRequestQueue(worker, rq);
 		return true;
 	}

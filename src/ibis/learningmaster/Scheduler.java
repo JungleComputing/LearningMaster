@@ -11,7 +11,7 @@ interface Scheduler {
 
 	void dumpState();
 
-	void peerHasJoined(IbisIdentifier source);
+	void workerHasJoined(IbisIdentifier source);
 
 	void registerCompletedTask(int task);
 

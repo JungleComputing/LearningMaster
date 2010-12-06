@@ -34,7 +34,7 @@ class WorkerScheduler implements Scheduler {
     }
 
     @Override
-    public void peerHasJoined(final IbisIdentifier source) {
+    public void workerHasJoined(final IbisIdentifier source) {
         // Ignore
     }
 

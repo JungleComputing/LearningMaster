@@ -13,7 +13,7 @@ import java.io.PrintStream;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-class Engine extends Thread implements PacketReceiveListener,
+class MawEngine extends Thread implements PacketReceiveListener,
         RegistryEventHandler, EngineInterface {
     private static final IbisCapabilities ibisCapabilities = new IbisCapabilities(
             IbisCapabilities.MEMBERSHIP_UNRELIABLE,
@@ -26,7 +26,7 @@ class Engine extends Thread implements PacketReceiveListener,
     private final Transmitter transmitter;
     private final ConcurrentLinkedQueue<IbisIdentifier> deletedPeers = new ConcurrentLinkedQueue<IbisIdentifier>();
     private final ConcurrentLinkedQueue<IbisIdentifier> newPeers = new ConcurrentLinkedQueue<IbisIdentifier>();
-    private final ConcurrentLinkedQueue<RequestMessage> workQueue = new ConcurrentLinkedQueue<RequestMessage>();
+    private final ConcurrentLinkedQueue<ExecuteTaskMessage> workQueue = new ConcurrentLinkedQueue<ExecuteTaskMessage>();
     private final PacketUpcallReceivePort receivePort;
     private final Ibis localIbis;
     private int activeWorkers = 0;
@@ -37,14 +37,14 @@ class Engine extends Thread implements PacketReceiveListener,
 
     private final Scheduler scheduler;
 
-    Engine(final boolean helper) throws IbisCreationFailedException,
+    MawEngine(final boolean helper) throws IbisCreationFailedException,
             IOException {
         super("LearningMaster engine thread");
         final boolean runForMaster = !helper;
-        this.transmitter = new Transmitter(this);
+        transmitter = new Transmitter(this);
         final Properties ibisProperties = new Properties();
-        this.localIbis = IbisFactory.createIbis(ibisCapabilities,
-                ibisProperties, true, this, PacketSendPort.portType,
+        localIbis = IbisFactory.createIbis(ibisCapabilities, ibisProperties,
+                true, this, PacketSendPort.portType,
                 PacketUpcallReceivePort.portType);
         final Registry registry = localIbis.registry();
         final IbisIdentifier myIbis = localIbis.identifier();
@@ -58,7 +58,7 @@ class Engine extends Thread implements PacketReceiveListener,
         }
         receivePort = new PacketUpcallReceivePort(localIbis,
                 Globals.receivePortName, this);
-        System.out.println("runForSpecialNode=" + runForMaster);
+        System.out.println("runForMaster=" + runForMaster);
         transmitter.start();
         registry.enableEvents();
         receivePort.enable();
@@ -232,7 +232,7 @@ class Engine extends Thread implements PacketReceiveListener,
     @Override
     public void wakeEngineThread() {
         synchronized (this) {
-            this.notifyAll();
+            notifyAll();
         }
     }
 
@@ -244,13 +244,15 @@ class Engine extends Thread implements PacketReceiveListener,
      *            The incoming message.
      */
     private void handleMessage(final Message msg) {
-        if (msg instanceof RequestMessage) {
-            final RequestMessage r = (RequestMessage) msg;
+        if (msg instanceof ExecuteTaskMessage) {
+            final ExecuteTaskMessage r = (ExecuteTaskMessage) msg;
             workQueue.add(r);
         } else if (msg instanceof TaskCompletedMessage) {
-            scheduler.registerCompletedTask(((TaskCompletedMessage) msg).task);
+            final TaskCompletedMessage taskCompletedMessage = (TaskCompletedMessage) msg;
+            scheduler.registerCompletedTask(taskCompletedMessage.task);
         } else if (msg instanceof RegisterWorkerMessage) {
-            scheduler.peerHasJoined(((RegisterWorkerMessage) msg).source);
+            final RegisterWorkerMessage registerWorkerMessage = (RegisterWorkerMessage) msg;
+            scheduler.workerHasJoined(registerWorkerMessage.source);
         } else {
             Globals.log.reportInternalError("Don't know how to handle a "
                     + msg.getClass() + " message");
@@ -268,7 +270,7 @@ class Engine extends Thread implements PacketReceiveListener,
                 break;
             }
             final long lingerTime = System.nanoTime() - msg.arrivalTime;
-            receivedMessageQueueStatistics.registerSample(lingerTime * 1e-3);
+            receivedMessageQueueStatistics.registerSample(lingerTime * 1e-9);
             handleMessage(msg);
             progress = true;
         }
@@ -284,7 +286,7 @@ class Engine extends Thread implements PacketReceiveListener,
      * @return <code>true</code> iff we actually handled a task request.
      */
     private boolean handleAWorkRequest() {
-        final RequestMessage request = workQueue.poll();
+        final ExecuteTaskMessage request = workQueue.poll();
 
         if (request == null) {
             if (Settings.TraceWorker) {
