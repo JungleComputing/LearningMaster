@@ -66,6 +66,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
             // Tell the master we're ready.
             transmitter.addToBookkeepingQueue(masterIdentifier,
                     new RegisterWorkerMessage());
+        } else {
+            // FIXME: submit work.
         }
         if (Settings.TraceNodeCreation) {
             Globals.log.reportProgress("Created ibis " + myIbis + " "
@@ -151,7 +153,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
      * 
      * @return <code>true</code> iff we made any changes to the node state.
      */
-    private boolean registerNewAndDeletedPeers() {
+    private boolean registerNewAndDeletedNodes() {
         boolean changes = false;
         while (true) {
             final IbisIdentifier peer = deletedPeers.poll();
@@ -311,6 +313,22 @@ class MawEngine extends Thread implements PacketReceiveListener,
         return true;
     }
 
+    private boolean handleWork() {
+        boolean progress;
+
+        if (isMaster) {
+            progress = dispatchWork();
+        } else {
+            progress = handleAWorkRequest();
+        }
+        return progress;
+    }
+
+    private boolean dispatchWork() {
+        // FIXME: try to keep workers busy.
+        return false;
+    }
+
     /**
      * Make sure there are enough outstanding requests.
      */
@@ -361,16 +379,16 @@ class MawEngine extends Thread implements PacketReceiveListener,
                 do {
                     // Keep doing bookkeeping chores until all is done.
                     final boolean progressIncoming = handleIncomingMessages();
-                    final boolean progressPeerChurn = registerNewAndDeletedPeers();
+                    final boolean progressNodeChurn = registerNewAndDeletedNodes();
                     final boolean progressRequests = maintainOutstandingRequests();
-                    final boolean progressWork = handleAWorkRequest();
-                    progress = progressIncoming || progressPeerChurn
+                    final boolean progressWork = handleWork();
+                    progress = progressIncoming || progressNodeChurn
                             || progressRequests || progressWork;
                     if (Settings.TraceDetailedProgress) {
                         if (progress) {
                             Globals.log.reportProgress("EE p=true i="
                                     + progressIncoming + " c="
-                                    + progressPeerChurn + " r="
+                                    + progressNodeChurn + " r="
                                     + progressRequests + " w=" + progressWork);
                             if (progressIncoming) {
                                 receivedMessageQueue.printCounts();
