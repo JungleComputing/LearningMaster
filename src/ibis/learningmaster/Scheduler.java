@@ -5,28 +5,31 @@ import ibis.ipl.IbisIdentifier;
 import java.io.PrintStream;
 
 interface Scheduler {
-	void shutdown();
+    void shutdown();
 
-	void removePeer(IbisIdentifier peer);
+    void removePeer(IbisIdentifier peer);
 
-	void dumpState();
+    void dumpState();
 
-	void workerHasJoined(IbisIdentifier source);
+    void workerHasJoined(IbisIdentifier source);
 
-	void registerCompletedTask(int task);
+    // FIXME: rename to registerCompletedJob
+    void registerCompletedTask(Job job);
 
-	void printStatistics(PrintStream printStream);
+    void printStatistics(PrintStream printStream);
 
-	/**
-	 * Returns true iff the engine should stop.
-	 * 
-	 * @return <code>true</code> iff the engine should stop.
-	 */
-	boolean shouldStop();
+    /**
+     * Returns true iff the engine should stop.
+     * 
+     * @return <code>true</code> iff the engine should stop.
+     */
+    boolean shouldStop();
 
-	void returnTask(int id);
+    void returnTask(Job id);
 
-	boolean requestsToSubmit();
+    boolean thereAreRequestsToSubmit();
 
-	boolean maintainOutstandingRequests(Transmitter transmitter);
+    boolean maintainOutstandingRequests(Transmitter transmitter);
+
+    void submitRequest(AtomicJob job);
 }

@@ -39,7 +39,7 @@ class WorkerScheduler implements Scheduler {
     }
 
     @Override
-    public void registerCompletedTask(final int task) {
+    public void registerCompletedTask(final Job task) {
         Globals.log
                 .reportInternalError("Someone tried to register a completed task to the worker scheduler");
     }
@@ -54,7 +54,7 @@ class WorkerScheduler implements Scheduler {
     }
 
     @Override
-    public void returnTask(final int id) {
+    public void returnTask(final Job id) {
         Globals.log
                 .reportInternalError("Someone tried to return a task to the worker scheduler");
     }
@@ -65,8 +65,13 @@ class WorkerScheduler implements Scheduler {
     }
 
     @Override
-    public boolean requestsToSubmit() {
+    public boolean thereAreRequestsToSubmit() {
         return false;
+    }
+
+    @Override
+    public void submitRequest(final AtomicJob job) {
+        throw new Error("Internal error: submitting jobs to a worker scheduler");
     }
 
 }

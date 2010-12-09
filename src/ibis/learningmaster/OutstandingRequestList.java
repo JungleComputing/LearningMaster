@@ -8,11 +8,11 @@ class OutstandingRequestList {
     private final LinkedList<OutstandingRequest> requests = new LinkedList<OutstandingRequestList.OutstandingRequest>();
 
     private static class OutstandingRequest {
-        private final int id;
+        private final Job id;
         private final IbisIdentifier worker;
 
-        public OutstandingRequest(final IbisIdentifier worker, final int id) {
-            this.id = id;
+        public OutstandingRequest(final IbisIdentifier worker, final Job job) {
+            id = job;
             this.worker = worker;
         }
 
@@ -22,8 +22,8 @@ class OutstandingRequestList {
         }
     }
 
-    void add(final IbisIdentifier worker, final int id) {
-        final OutstandingRequest rq = new OutstandingRequest(worker, id);
+    void add(final IbisIdentifier worker, final Job job) {
+        final OutstandingRequest rq = new OutstandingRequest(worker, job);
         requests.add(rq);
     }
 
@@ -52,7 +52,7 @@ class OutstandingRequestList {
     }
 
     @SuppressWarnings("synthetic-access")
-    boolean removeTask(final int id) {
+    boolean removeTask(final Job id) {
         for (final OutstandingRequest r : requests) {
             if (r.id == id) {
                 Globals.log.reportProgress("Returning request " + r

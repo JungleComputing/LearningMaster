@@ -3,10 +3,13 @@ package ibis.learningmaster;
 class ExecuteTaskMessage extends SmallMessage {
     private static final long serialVersionUID = 1L;
 
-    final int jobNo;
+    final Job job;
 
-    ExecuteTaskMessage(int jobNo) {
-        this.jobNo = jobNo;
+    final int id;
+
+    ExecuteTaskMessage(final Job job, final int id) {
+        this.job = job;
+        this.id = id;
     }
 
     @Override
@@ -15,16 +18,16 @@ class ExecuteTaskMessage extends SmallMessage {
             return false;
         }
         final ExecuteTaskMessage other = (ExecuteTaskMessage) obj;
-        return this.source.equals(other.source) && this.jobNo == other.jobNo;
+        return source.equals(other.source) && job.equals(other.job);
     }
 
     @Override
     public String toString() {
-        return "RequestMessage[" + jobNo + "]";
+        return "RequestMessage[" + job + "]";
     }
 
     @Override
     public int hashCode() {
-        return jobNo;
+        return job.hashCode();
     }
 }

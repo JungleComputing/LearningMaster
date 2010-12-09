@@ -10,6 +10,7 @@ import ibis.ipl.RegistryEventHandler;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -37,6 +38,21 @@ class MawEngine extends Thread implements PacketReceiveListener,
 
     private final Scheduler scheduler;
 
+    private static class SleepJob implements AtomicJob {
+
+        @Override
+        public boolean isSupported() {
+            return true;
+        }
+
+        @Override
+        public Serializable run(final Serializable input)
+                throws JobFailedException {
+            return null;
+        }
+
+    }
+
     MawEngine(final boolean helper) throws IbisCreationFailedException,
             IOException {
         super("LearningMaster engine thread");
@@ -52,7 +68,10 @@ class MawEngine extends Thread implements PacketReceiveListener,
                 .elect(MASTER_ELECTION_NAME);
         isMaster = masterIdentifier.equals(myIbis);
         if (isMaster) {
-            scheduler = new RoundRobinScheduler(Settings.TASK_COUNT);
+            scheduler = new RoundRobinScheduler();
+            for (int i = 0; i < Settings.TASK_COUNT; i++) {
+                scheduler.submitRequest(new SleepJob());
+            }
         } else {
             scheduler = new WorkerScheduler(masterIdentifier);
         }
@@ -296,9 +315,9 @@ class MawEngine extends Thread implements PacketReceiveListener,
             }
             return false;
         }
-        final int jobNo = request.jobNo;
+        final Job job = request.job;
         if (Settings.TraceWorker) {
-            Globals.log.reportProgress("Starting execution of job " + jobNo);
+            Globals.log.reportProgress("Starting execution of job " + job);
         }
         try {
             Thread.sleep(Settings.TASK_DURATION);
@@ -306,27 +325,11 @@ class MawEngine extends Thread implements PacketReceiveListener,
             // Ignore
         }
         if (Settings.TraceWorker) {
-            Globals.log.reportProgress("Ended execution of job " + jobNo);
+            Globals.log.reportProgress("Ended execution of job " + job);
         }
-        final Message msg = new TaskCompletedMessage(jobNo);
+        final Message msg = new TaskCompletedMessage(request.id);
         transmitter.addToBookkeepingQueue(request.source, msg);
         return true;
-    }
-
-    private boolean handleWork() {
-        boolean progress;
-
-        if (isMaster) {
-            progress = dispatchWork();
-        } else {
-            progress = handleAWorkRequest();
-        }
-        return progress;
-    }
-
-    private boolean dispatchWork() {
-        // FIXME: try to keep workers busy.
-        return false;
     }
 
     /**
@@ -381,7 +384,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
                     final boolean progressIncoming = handleIncomingMessages();
                     final boolean progressNodeChurn = registerNewAndDeletedNodes();
                     final boolean progressRequests = maintainOutstandingRequests();
-                    final boolean progressWork = handleWork();
+                    final boolean progressWork = handleAWorkRequest();
                     progress = progressIncoming || progressNodeChurn
                             || progressRequests || progressWork;
                     if (Settings.TraceDetailedProgress) {
@@ -403,7 +406,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
                     final boolean messageQueueIsEmpty = receivedMessageQueue
                             .isEmpty();
                     final boolean noRequestsToSubmit = !scheduler
-                            .requestsToSubmit();
+                            .thereAreRequestsToSubmit();
                     if (!stopped.isSet() && messageQueueIsEmpty
                             && newPeers.isEmpty() && deletedPeers.isEmpty()
                             && noRequestsToSubmit && workQueue.isEmpty()) {

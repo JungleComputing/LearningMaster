@@ -4,6 +4,7 @@ import ibis.ipl.IbisIdentifier;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 /**
  * Schedule tasks one by one on the available workers. Note that there is always
@@ -16,11 +17,10 @@ import java.util.ArrayList;
 class RoundRobinScheduler implements Scheduler {
     private final ArrayList<IbisIdentifier> peers = new ArrayList<IbisIdentifier>();
     private int nextPeer = 0;
-    private final TaskSet taskSet;
     private final OutstandingRequestList outstandingRequests = new OutstandingRequestList();
+    private final LinkedList<Job> jobQueue = new LinkedList<Job>();
 
-    RoundRobinScheduler(final int tasks) {
-        taskSet = new TaskSet(tasks);
+    RoundRobinScheduler() {
     }
 
     @Override
@@ -40,7 +40,6 @@ class RoundRobinScheduler implements Scheduler {
     public void dumpState() {
         Globals.log.reportProgress("RoundRobinScheduler: peers="
                 + peers.toString());
-        taskSet.dumpState();
         outstandingRequests.dumpState();
     }
 
@@ -56,8 +55,8 @@ class RoundRobinScheduler implements Scheduler {
     }
 
     @Override
-    public void registerCompletedTask(final int task) {
-        outstandingRequests.removeTask(task);
+    public void registerCompletedTask(final Job job) {
+        outstandingRequests.removeTask(job);
     }
 
     @Override
@@ -66,12 +65,13 @@ class RoundRobinScheduler implements Scheduler {
 
     @Override
     public boolean shouldStop() {
-        return taskSet.isEmpty() && outstandingRequests.isEmpty();
+        return outstandingRequests.isEmpty() && outstandingRequests.isEmpty();
     }
 
     @Override
-    public void returnTask(final int id) {
-        taskSet.add(id);
+    public void returnTask(final Job id) {
+        // FIXME: do this properly.
+        outstandingRequests.add(0, id);
         final boolean removed = outstandingRequests.removeTask(id);
         if (!removed) {
             Globals.log.reportInternalError("Task " + id
@@ -85,7 +85,7 @@ class RoundRobinScheduler implements Scheduler {
             // There already is an outstanding request.
             return false;
         }
-        if (taskSet.isEmpty()) {
+        if (jobQueue.isEmpty()) {
             // No more tasks to submit.
             return false;
         }
@@ -93,21 +93,26 @@ class RoundRobinScheduler implements Scheduler {
             // There are no peers to submit tasks to.
             return false;
         }
-        final int task = taskSet.getNextTask();
+        final Job job = jobQueue.removeFirst();
         if (nextPeer >= peers.size()) {
             nextPeer = 0;
         }
         final IbisIdentifier worker = peers.get(nextPeer);
         nextPeer++;
-        outstandingRequests.add(worker, task);
-        final ExecuteTaskMessage rq = new ExecuteTaskMessage(task);
+        outstandingRequests.add(worker, job);
+        final ExecuteTaskMessage rq = new ExecuteTaskMessage(job);
         transmitter.addToRequestQueue(worker, rq);
         return true;
     }
 
     @Override
-    public boolean requestsToSubmit() {
-        return outstandingRequests.isEmpty() && !taskSet.isEmpty();
+    public boolean thereAreRequestsToSubmit() {
+        return outstandingRequests.isEmpty() && !jobQueue.isEmpty();
+    }
+
+    @Override
+    public void submitRequest(final AtomicJob job) {
+        jobQueue.add(job);
     }
 
 }
