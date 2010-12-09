@@ -14,10 +14,24 @@ import java.util.LinkedList;
  * @author Kees van Reeuwijk
  * 
  */
-class RoundRobinScheduler implements Scheduler {
-    private final ArrayList<IbisIdentifier> peers = new ArrayList<IbisIdentifier>();
-    private int nextPeer = 0;
+class LearningScheduler implements Scheduler {
+    private final ArrayList<PeerInfo> peers = new ArrayList<PeerInfo>();
     private final LinkedList<Job> jobQueue = new LinkedList<Job>();
+
+    private static class PeerInfo {
+        private boolean deleted = false;
+        final IbisIdentifier node;
+
+        PeerInfo(IbisIdentifier node) {
+            super();
+            this.node = node;
+        }
+
+        void setDeleted() {
+            deleted = true;
+        }
+
+    }
 
     @Override
     public void shutdown() {
@@ -30,6 +44,10 @@ class RoundRobinScheduler implements Scheduler {
     @Override
     public void removePeer(final IbisIdentifier peer) {
         peers.remove(peer);
+        final PeerInfo info = peerStats.get(peer);
+        if (info != null) {
+            info.setDeleted();
+        }
     }
 
     @Override
@@ -46,7 +64,7 @@ class RoundRobinScheduler implements Scheduler {
      */
     @Override
     public void workerHasJoined(final IbisIdentifier peer) {
-        peers.add(peer);
+        peers.add(new PeerInfo(peer));
     }
 
     @Override
@@ -75,15 +93,21 @@ class RoundRobinScheduler implements Scheduler {
             return false;
         }
         final Job job = jobQueue.removeFirst();
-        if (nextPeer >= peers.size()) {
-            nextPeer = 0;
+        final IbisIdentifier worker = selectBestPeer();
+        if (worker == null) {
+            return false;
         }
-        final IbisIdentifier worker = peers.get(nextPeer);
-        nextPeer++;
         final int id = outstandingRequests.add(worker, job);
         final ExecuteTaskMessage rq = new ExecuteTaskMessage(job, id);
         transmitter.addToRequestQueue(worker, rq);
         return true;
+    }
+
+    private PeerInfofier selectBestPeer() {
+        for (final PeerInfo p : peers) {
+
+        }
+        return null;
     }
 
     @Override

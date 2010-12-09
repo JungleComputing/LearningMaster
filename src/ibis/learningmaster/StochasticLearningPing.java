@@ -392,12 +392,12 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
         }
         final PrintStream printStream = Globals.log.getPrintStream();
         printStatistics(printStream);
-        pingAdministration.printStatistics(printStream);
-        transmitter.printStatistics(printStream);
         Utils.printThreadStats(printStream);
     }
 
     private void printStatistics(final PrintStream printStream) {
+        pingAdministration.printStatistics(printStream);
+        transmitter.printStatistics(printStream);
     }
 
     private void dumpEngineState() {

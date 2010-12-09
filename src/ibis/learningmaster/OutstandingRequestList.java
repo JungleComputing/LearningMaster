@@ -6,13 +6,17 @@ import java.util.LinkedList;
 
 class OutstandingRequestList {
     private final LinkedList<OutstandingRequest> requests = new LinkedList<OutstandingRequestList.OutstandingRequest>();
+    private static int nextId = 0;
 
     private static class OutstandingRequest {
-        private final Job id;
+        private final Job job;
+        private final int id;
         private final IbisIdentifier worker;
 
-        public OutstandingRequest(final IbisIdentifier worker, final Job job) {
-            id = job;
+        public OutstandingRequest(final IbisIdentifier worker, final Job job,
+                int id) {
+            this.job = job;
+            this.id = id;
             this.worker = worker;
         }
 
@@ -22,9 +26,11 @@ class OutstandingRequestList {
         }
     }
 
-    void add(final IbisIdentifier worker, final Job job) {
-        final OutstandingRequest rq = new OutstandingRequest(worker, job);
+    int add(final IbisIdentifier worker, final Job job) {
+        final int id = nextId++;
+        final OutstandingRequest rq = new OutstandingRequest(worker, job, id);
         requests.add(rq);
+        return id;
     }
 
     void dumpState() {
@@ -40,7 +46,7 @@ class OutstandingRequestList {
         for (final OutstandingRequest r : requests) {
             if (peer.equals(r.worker)) {
                 requests.remove(r);
-                scheduler.returnTask(r.id);
+                scheduler.returnTask(r.job);
                 Globals.log.reportProgress("Returning request " + r
                         + " to scheduler, since this worker has gone");
             }
@@ -52,7 +58,7 @@ class OutstandingRequestList {
     }
 
     @SuppressWarnings("synthetic-access")
-    boolean removeTask(final Job id) {
+    boolean removeTask(final int id) {
         for (final OutstandingRequest r : requests) {
             if (r.id == id) {
                 Globals.log.reportProgress("Returning request " + r

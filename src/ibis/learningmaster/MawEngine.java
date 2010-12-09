@@ -35,6 +35,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
     private long requestsHandlingTime = 0;
     private long idleTime = 0;
     private final boolean isMaster;
+    private final OutstandingRequestList outstandingRequests = new OutstandingRequestList();
 
     private final Scheduler scheduler;
 
@@ -164,6 +165,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
         }
         activeWorkers--;
         scheduler.removePeer(peer);
+        outstandingRequests.removePeer(peer, scheduler);
     }
 
     /**
@@ -270,7 +272,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
             workQueue.add(r);
         } else if (msg instanceof TaskCompletedMessage) {
             final TaskCompletedMessage taskCompletedMessage = (TaskCompletedMessage) msg;
-            scheduler.registerCompletedTask(taskCompletedMessage.task);
+            outstandingRequests.removeTask(taskCompletedMessage.task);
         } else if (msg instanceof RegisterWorkerMessage) {
             final RegisterWorkerMessage registerWorkerMessage = (RegisterWorkerMessage) msg;
             scheduler.workerHasJoined(registerWorkerMessage.source);
@@ -337,8 +339,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
      */
     private boolean maintainOutstandingRequests() {
         final long start = System.nanoTime();
-        final boolean progress = scheduler
-                .maintainOutstandingRequests(transmitter);
+        final boolean progress = scheduler.maintainOutstandingRequests(
+                transmitter, outstandingRequests);
         final long duration = System.nanoTime() - start;
         requestsHandlingTime += duration;
         return progress;
@@ -370,6 +372,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
                 + deletedPeers.size() + " deleted peers");
         transmitter.dumpState();
         scheduler.dumpState();
+        outstandingRequests.dumpState();
     }
 
     @Override
@@ -398,6 +401,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
                             }
                             if (progressRequests) {
                                 scheduler.dumpState();
+                                outstandingRequests.dumpState();
                             }
                         }
                     }
@@ -405,8 +409,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
                 synchronized (this) {
                     final boolean messageQueueIsEmpty = receivedMessageQueue
                             .isEmpty();
-                    final boolean noRequestsToSubmit = !scheduler
-                            .thereAreRequestsToSubmit();
+                    final boolean noRequestsToSubmit = outstandingRequests
+                            .isEmpty() && !scheduler.thereAreRequestsToSubmit();
                     if (!stopped.isSet() && messageQueueIsEmpty
                             && newPeers.isEmpty() && deletedPeers.isEmpty()
                             && noRequestsToSubmit && workQueue.isEmpty()) {
@@ -432,7 +436,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
                         dumpEngineState();
                     }
                 }
-                if (scheduler.shouldStop()) {
+                if (outstandingRequests.isEmpty() && scheduler.shouldStop()) {
                     stopped.set();
                 }
             }

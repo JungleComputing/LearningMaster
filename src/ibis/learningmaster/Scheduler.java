@@ -13,9 +13,6 @@ interface Scheduler {
 
     void workerHasJoined(IbisIdentifier source);
 
-    // FIXME: rename to registerCompletedJob
-    void registerCompletedTask(Job job);
-
     void printStatistics(PrintStream printStream);
 
     /**
@@ -29,7 +26,8 @@ interface Scheduler {
 
     boolean thereAreRequestsToSubmit();
 
-    boolean maintainOutstandingRequests(Transmitter transmitter);
+    boolean maintainOutstandingRequests(Transmitter transmitter,
+            OutstandingRequestList outstandingRequests);
 
     void submitRequest(AtomicJob job);
 }

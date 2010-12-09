@@ -98,6 +98,7 @@ class StochasticLearningMaster {
             return label;
         }
 
+        @SuppressWarnings("synthetic-access")
         void printStatistics(final PrintStream s, final double totalTime) {
             totalIdleTime += now - busyUntilTime;
             final long perc = Math.round(100 * totalIdleTime / totalTime);

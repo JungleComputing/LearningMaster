@@ -39,12 +39,6 @@ class WorkerScheduler implements Scheduler {
     }
 
     @Override
-    public void registerCompletedTask(final Job task) {
-        Globals.log
-                .reportInternalError("Someone tried to register a completed task to the worker scheduler");
-    }
-
-    @Override
     public void printStatistics(final PrintStream printStream) {
     }
 
@@ -60,7 +54,8 @@ class WorkerScheduler implements Scheduler {
     }
 
     @Override
-    public boolean maintainOutstandingRequests(final Transmitter transmitter) {
+    public boolean maintainOutstandingRequests(final Transmitter transmitter,
+            OutstandingRequestList outstandingRequests) {
         return false;
     }
 
