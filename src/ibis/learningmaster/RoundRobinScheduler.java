@@ -55,7 +55,7 @@ class RoundRobinScheduler implements Scheduler {
 
     @Override
     public boolean shouldStop() {
-        return true;
+        return jobQueue.isEmpty();
     }
 
     @Override
@@ -65,7 +65,7 @@ class RoundRobinScheduler implements Scheduler {
 
     @Override
     public boolean maintainOutstandingRequests(final Transmitter transmitter,
-            OutstandingRequestList outstandingRequests) {
+            final OutstandingRequestList outstandingRequests) {
         if (jobQueue.isEmpty()) {
             // There are no tasks to submit.
             return false;
@@ -81,7 +81,7 @@ class RoundRobinScheduler implements Scheduler {
         final IbisIdentifier worker = peers.get(nextPeer);
         nextPeer++;
         final int id = outstandingRequests.add(worker, job);
-        final ExecuteTaskMessage rq = new ExecuteTaskMessage(job, id);
+        final ExecuteTaskMessage rq = new ExecuteTaskMessage(job, id, null);
         transmitter.addToRequestQueue(worker, rq);
         return true;
     }

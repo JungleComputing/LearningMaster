@@ -1,5 +1,7 @@
 package ibis.learningmaster;
 
+import java.io.Serializable;
+
 class ExecuteTaskMessage extends SmallMessage {
     private static final long serialVersionUID = 1L;
 
@@ -7,9 +9,12 @@ class ExecuteTaskMessage extends SmallMessage {
 
     final int id;
 
-    ExecuteTaskMessage(final Job job, final int id) {
+    final Serializable input;
+
+    ExecuteTaskMessage(final Job job, final int id, final Serializable input) {
         this.job = job;
         this.id = id;
+        this.input = input;
     }
 
     @Override

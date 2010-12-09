@@ -1,5 +1,7 @@
 package ibis.learningmaster;
 
+import java.io.Serializable;
+
 /**
  * A message from a worker to a master, telling it it has completed task 'task'.
  * 
@@ -9,14 +11,19 @@ package ibis.learningmaster;
 class TaskCompletedMessage extends Message {
     private static final long serialVersionUID = 1L;
 
-    public final int task;
+    final int task;
+    Serializable result;
+    double completionTime;
 
-    TaskCompletedMessage(int task) {
+    TaskCompletedMessage(final int task, final Serializable res,
+            final double completionTime) {
         this.task = task;
+        this.result = res;
+        this.completionTime = completionTime;
     }
 
     @Override
     public String toString() {
-        return "PieceMessage[" + task + "]";
+        return "TaskCompletedMessage[" + task + "]";
     }
 }

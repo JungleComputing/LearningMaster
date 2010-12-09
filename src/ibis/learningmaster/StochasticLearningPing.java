@@ -61,9 +61,10 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
         private int pingsToSend;
         private int pingsToReceive;
         private final Estimator estimators[] = {
-                new LogGaussianEstimator(1e-3, 1e-1),
+                new LogGaussianEstimator(Math.log(1e-3), Math.log(1e-1)),
                 new GaussianEstimator(1e-3, 1e-3),
-                new ExponentialDecayLogEstimator(1e-3, 1e-1, 1),
+                new ExponentialDecayLogEstimator(Math.log(1e-3),
+                        Math.log(1e-1), 1),
                 new ExponentialDecayEstimator(1e-3, 1e-3) };
         private long latestPingSentTime;
 

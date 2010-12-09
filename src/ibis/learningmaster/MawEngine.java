@@ -310,6 +310,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
      */
     private boolean handleAWorkRequest() {
         final ExecuteTaskMessage request = workQueue.poll();
+        Exception failure = null;
 
         if (request == null) {
             if (Settings.TraceWorker) {
@@ -321,15 +322,26 @@ class MawEngine extends Thread implements PacketReceiveListener,
         if (Settings.TraceWorker) {
             Globals.log.reportProgress("Starting execution of job " + job);
         }
+        final long startTime = System.nanoTime();
+        Serializable res;
         try {
-            Thread.sleep(Settings.TASK_DURATION);
-        } catch (final InterruptedException e) {
-            // Ignore
+            if (job instanceof AtomicJob) {
+                final AtomicJob aj = (AtomicJob) job;
+                res = aj.run(request.input);
+            } else {
+                // FIXME: properly handle this.
+                return false;
+            }
+        } catch (final JobFailedException x) {
+            failure = x;
+            res = null;
         }
+        final long endTime = System.nanoTime();
         if (Settings.TraceWorker) {
             Globals.log.reportProgress("Ended execution of job " + job);
         }
-        final Message msg = new TaskCompletedMessage(request.id);
+        final Message msg = new TaskCompletedMessage(request.id, res,
+                1e-9 * (endTime - startTime));
         transmitter.addToBookkeepingQueue(request.source, msg);
         return true;
     }
