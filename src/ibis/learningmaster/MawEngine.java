@@ -39,7 +39,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
 
     private final Scheduler scheduler;
 
-    private static class SleepJob implements AtomicJob {
+    private static class SleepJob implements AtomicJob, Serializable {
+        private static final long serialVersionUID = 1L;
 
         @Override
         public boolean isSupported() {
@@ -60,10 +61,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
 
     }
 
-    MawEngine(final boolean helper) throws IbisCreationFailedException,
-            IOException {
+    MawEngine() throws IbisCreationFailedException, IOException {
         super("LearningMaster engine thread");
-        final boolean runForMaster = !helper;
         transmitter = new Transmitter(this);
         final Properties ibisProperties = new Properties();
         localIbis = IbisFactory.createIbis(ibisCapabilities, ibisProperties,
@@ -76,6 +75,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
         isMaster = masterIdentifier.equals(myIbis);
         if (isMaster) {
             scheduler = new RoundRobinScheduler();
+            // TODO: move the submission of jobs outside MawEngine.
             for (int i = 0; i < Settings.TASK_COUNT; i++) {
                 scheduler.submitRequest(new SleepJob());
             }
@@ -84,7 +84,6 @@ class MawEngine extends Thread implements PacketReceiveListener,
         }
         receivePort = new PacketUpcallReceivePort(localIbis,
                 Globals.receivePortName, this);
-        System.out.println("runForMaster=" + runForMaster);
         transmitter.start();
         registry.enableEvents();
         receivePort.enable();
@@ -92,8 +91,6 @@ class MawEngine extends Thread implements PacketReceiveListener,
             // Tell the master we're ready.
             transmitter.addToBookkeepingQueue(masterIdentifier,
                     new RegisterWorkerMessage());
-        } else {
-            // FIXME: submit work.
         }
         if (Settings.TraceNodeCreation) {
             Globals.log.reportProgress("Created ibis " + myIbis + " "
@@ -152,55 +149,6 @@ class MawEngine extends Thread implements PacketReceiveListener,
         wakeEngineThread(); // Something interesting has happened.
     }
 
-    private void registerNewPeer(final IbisIdentifier peer) {
-        if (peer.equals(localIbis.identifier())) {
-            // That's the local node. Ignore.
-            return;
-        }
-        activeWorkers++;
-        if (Settings.TracePeers) {
-            Globals.log.reportProgress("Peer " + peer + " has joined");
-        }
-        // We only add it to the administration when it has sent
-        // a join message.
-    }
-
-    private void registerPeerLeft(final IbisIdentifier peer) {
-        if (Settings.TracePeers) {
-            Globals.log.reportProgress("Peer " + peer + " has left");
-        }
-        activeWorkers--;
-        scheduler.removePeer(peer);
-        outstandingRequests.removePeer(peer, scheduler);
-    }
-
-    /**
-     * Handle any new and deleted peers that have been registered after the last
-     * call.
-     * 
-     * @return <code>true</code> iff we made any changes to the node state.
-     */
-    private boolean registerNewAndDeletedNodes() {
-        boolean changes = false;
-        while (true) {
-            final IbisIdentifier peer = deletedPeers.poll();
-            if (peer == null) {
-                break;
-            }
-            registerPeerLeft(peer);
-            changes = true;
-        }
-        while (true) {
-            final IbisIdentifier peer = newPeers.poll();
-            if (peer == null) {
-                break;
-            }
-            registerNewPeer(peer);
-            changes = true;
-        }
-        return changes;
-    }
-
     /**
      * Register the fact that no new peers can join this pool. Not relevant, so
      * we ignore this.
@@ -233,6 +181,57 @@ class MawEngine extends Thread implements PacketReceiveListener,
         }
     }
 
+    private void registerNewPeer(final IbisIdentifier peer) {
+        if (peer.equals(localIbis.identifier())) {
+            // That's the local node. Ignore.
+            return;
+        }
+        activeWorkers++;
+        if (Settings.TracePeers) {
+            Globals.log.reportProgress("Peer " + peer + " has joined");
+        }
+        /*
+         * We only add it to the administration when it has sent a join message.
+         * Otherwise we might send it work before it has initialized.
+         */
+    }
+
+    private void registerPeerLeft(final IbisIdentifier peer) {
+        if (Settings.TracePeers) {
+            Globals.log.reportProgress("Peer " + peer + " has left");
+        }
+        activeWorkers--;
+        outstandingRequests.removePeer(peer, scheduler);
+        scheduler.removePeer(peer);
+    }
+
+    /**
+     * Handle any new and deleted peers that have been registered after the last
+     * call.
+     * 
+     * @return <code>true</code> iff we made any changes to the node state.
+     */
+    private boolean registerNewAndDeletedNodes() {
+        boolean changes = false;
+        while (true) {
+            final IbisIdentifier peer = deletedPeers.poll();
+            if (peer == null) {
+                break;
+            }
+            registerPeerLeft(peer);
+            changes = true;
+        }
+        while (true) {
+            final IbisIdentifier peer = newPeers.poll();
+            if (peer == null) {
+                break;
+            }
+            registerNewPeer(peer);
+            changes = true;
+        }
+        return changes;
+    }
+
     private void setStopped() {
         stopped.set();
         wakeEngineThread(); // Something interesting has happened.
@@ -249,7 +248,6 @@ class MawEngine extends Thread implements PacketReceiveListener,
         // We are not allowed to do I/O in this thread, and we shouldn't
         // take too much time, so put all messages in a local queue to be
         // handled by the main loop.
-        packet.arrivalTime = System.nanoTime();
         receivedMessageQueue.add(packet);
         if (Settings.TraceReceiver) {
             Globals.log.reportProgress("Added to receive queue: " + packet);
@@ -278,7 +276,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
             workQueue.add(r);
         } else if (msg instanceof TaskCompletedMessage) {
             final TaskCompletedMessage taskCompletedMessage = (TaskCompletedMessage) msg;
-            outstandingRequests.removeTask(taskCompletedMessage.task);
+            outstandingRequests.removeTask(taskCompletedMessage.task,
+                    taskCompletedMessage.failed);
         } else if (msg instanceof RegisterWorkerMessage) {
             final RegisterWorkerMessage registerWorkerMessage = (RegisterWorkerMessage) msg;
             scheduler.workerHasJoined(registerWorkerMessage.source);
@@ -316,7 +315,6 @@ class MawEngine extends Thread implements PacketReceiveListener,
      */
     private boolean handleAWorkRequest() {
         final ExecuteTaskMessage request = workQueue.poll();
-        Exception failure = null;
 
         if (request == null) {
             if (Settings.TraceWorker) {
@@ -330,30 +328,34 @@ class MawEngine extends Thread implements PacketReceiveListener,
         }
         final long startTime = System.nanoTime();
         Serializable res;
+        boolean failed = false;
         try {
             if (job instanceof AtomicJob) {
                 final AtomicJob aj = (AtomicJob) job;
                 res = aj.run(request.input);
             } else {
-                // FIXME: properly handle this.
+                Globals.log
+                        .reportInternalError("Don't know how to execute a job of type "
+                                + job.getClass());
                 return false;
             }
         } catch (final JobFailedException x) {
-            failure = x;
+            Globals.log.reportError("Execution of job " + job + " failed", x);
+            failed = true;
             res = null;
         }
         final long endTime = System.nanoTime();
         if (Settings.TraceWorker) {
             Globals.log.reportProgress("Ended execution of job " + job);
         }
-        final Message msg = new TaskCompletedMessage(request.id, res,
+        final Message msg = new TaskCompletedMessage(request.id, res, failed,
                 1e-9 * (endTime - startTime));
         transmitter.addToBookkeepingQueue(request.source, msg);
         return true;
     }
 
     /**
-     * Make sure there are enough outstanding requests.
+     * On the master, make sure there are enough outstanding requests.
      */
     private boolean maintainOutstandingRequests() {
         final long start = System.nanoTime();
@@ -429,9 +431,9 @@ class MawEngine extends Thread implements PacketReceiveListener,
                             .isEmpty();
                     final boolean noRequestsToSubmit = outstandingRequests
                             .isEmpty() && !scheduler.thereAreRequestsToSubmit();
-                    if (!stopped.isSet() && messageQueueIsEmpty
-                            && newPeers.isEmpty() && deletedPeers.isEmpty()
-                            && noRequestsToSubmit && workQueue.isEmpty()) {
+                    if (noRequestsToSubmit && messageQueueIsEmpty
+                            && !stopped.isSet() && newPeers.isEmpty()
+                            && deletedPeers.isEmpty() && workQueue.isEmpty()) {
                         try {
                             final long sleepStartTime = System
                                     .currentTimeMillis();

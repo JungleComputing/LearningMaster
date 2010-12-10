@@ -135,7 +135,7 @@ class LearningScheduler implements Scheduler {
         if (worker == null) {
             return false;
         }
-        final int id = outstandingRequests.add(worker.node, job);
+        final int id = outstandingRequests.addRequest(worker.node, job);
         // FIXME: properly handle task input
         final ExecuteTaskMessage rq = new ExecuteTaskMessage(job, id, null);
         transmitter.addToRequestQueue(worker.node, rq);

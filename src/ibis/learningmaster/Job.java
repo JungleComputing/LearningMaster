@@ -1,6 +1,5 @@
 package ibis.learningmaster;
 
-
 /**
  * The super-interface of all variations of jobs.
  * 

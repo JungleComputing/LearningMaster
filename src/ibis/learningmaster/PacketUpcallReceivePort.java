@@ -62,6 +62,7 @@ class PacketUpcallReceivePort implements MessageUpcall {
         }
         // msg.finish();
         data.source = msg.origin().ibisIdentifier();
+        data.arrivalTime = System.nanoTime();
         listener.messageReceived(data);
     }
 

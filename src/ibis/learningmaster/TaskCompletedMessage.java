@@ -12,13 +12,15 @@ class TaskCompletedMessage extends Message {
     private static final long serialVersionUID = 1L;
 
     final int task;
-    Serializable result;
-    double completionTime;
+    final Serializable result;
+    final boolean failed;
+    final double completionTime;
 
     TaskCompletedMessage(final int task, final Serializable res,
-            final double completionTime) {
+            final boolean failed, final double completionTime) {
         this.task = task;
         this.result = res;
+        this.failed = failed;
         this.completionTime = completionTime;
     }
 

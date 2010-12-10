@@ -14,7 +14,7 @@ class OutstandingRequestList {
         private final IbisIdentifier worker;
 
         public OutstandingRequest(final IbisIdentifier worker, final Job job,
-                int id) {
+                final int id) {
             this.job = job;
             this.id = id;
             this.worker = worker;
@@ -26,7 +26,7 @@ class OutstandingRequestList {
         }
     }
 
-    int add(final IbisIdentifier worker, final Job job) {
+    int addRequest(final IbisIdentifier worker, final Job job) {
         final int id = nextId++;
         final OutstandingRequest rq = new OutstandingRequest(worker, job, id);
         requests.add(rq);
@@ -58,7 +58,10 @@ class OutstandingRequestList {
     }
 
     @SuppressWarnings("synthetic-access")
-    boolean removeTask(final int id) {
+    boolean removeTask(final int id, final boolean failed) {
+        if (failed) {
+            Globals.log.reportError("Task  " + id + " failed");
+        }
         for (final OutstandingRequest r : requests) {
             if (r.id == id) {
                 Globals.log.reportProgress("Returning request " + r

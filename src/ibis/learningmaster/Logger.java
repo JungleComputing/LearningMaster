@@ -61,6 +61,13 @@ class Logger {
         logfile.println(msg);
     }
 
+    void reportError(final String msg, final JobFailedException x) {
+        printTimeStamp();
+        logfile.print("Error: ");
+        logfile.println(msg + ':');
+        x.printStackTrace(logfile);
+    }
+
     /**
      * Given an error message, report an internal error.
      * 

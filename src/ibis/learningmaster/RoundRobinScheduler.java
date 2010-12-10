@@ -80,7 +80,7 @@ class RoundRobinScheduler implements Scheduler {
         }
         final IbisIdentifier worker = peers.get(nextPeer);
         nextPeer++;
-        final int id = outstandingRequests.add(worker, job);
+        final int id = outstandingRequests.addRequest(worker, job);
         final ExecuteTaskMessage rq = new ExecuteTaskMessage(job, id, null);
         transmitter.addToRequestQueue(worker, rq);
         return true;

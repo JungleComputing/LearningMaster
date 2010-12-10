@@ -16,7 +16,7 @@ public class JobFailedException extends Exception {
     }
 
     /**
-     * Given an error message, constructs a new MaestroException.
+     * Given an error message, constructs a new Exception.
      * 
      * @param msg
      *            The error message.
