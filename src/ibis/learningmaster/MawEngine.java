@@ -49,6 +49,12 @@ class MawEngine extends Thread implements PacketReceiveListener,
         @Override
         public Serializable run(final Serializable input)
                 throws JobFailedException {
+            final Long time = (Long) input;
+            try {
+                Thread.sleep(time);
+            } catch (final InterruptedException e) {
+                // Ignore
+            }
             return null;
         }
 
