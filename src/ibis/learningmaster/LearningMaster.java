@@ -3,6 +3,7 @@ package ibis.learningmaster;
 import ibis.ipl.IbisCreationFailedException;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Properties;
 
@@ -24,6 +25,28 @@ class LearningMaster {
         System.err.println(" --helper\tPeer is a helper in a proxy-mode setup");
         System.err.println("Actual arguments: " + Arrays.deepToString(args));
         throw new Error("Bad command-line arguments");
+    }
+
+    private static class SleepJob implements AtomicJob, Serializable {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public boolean isSupported() {
+            return true;
+        }
+
+        @Override
+        public Serializable run(final Serializable input)
+                throws JobFailedException {
+            final Long time = (Long) input;
+            try {
+                Thread.sleep(time);
+            } catch (final InterruptedException e) {
+                // Ignore
+            }
+            return null;
+        }
+
     }
 
     private static void setPropertyOption(final String arg) {
@@ -51,6 +74,11 @@ class LearningMaster {
         }
         try {
             final MawEngine e = new MawEngine();
+            if (e.isMaster()) {
+                for (int i = 0; i < Settings.TASK_COUNT; i++) {
+                    e.submitRequest(new SleepJob());
+                }
+            }
             e.start();
             e.join();
         } catch (final IbisCreationFailedException e) {

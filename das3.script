@@ -38,5 +38,5 @@ echo $PRUN -v $OPTION -asocial -t $RUNTIME -np $NR_NODES -o $LOGSDIR/out $JAVA $
 $PRUN -v $OPTION -asocial -t $RUNTIME -np $NR_NODES -o $LOGSDIR/out $JAVA $PROF $ARGS
 tar -cf $LOGSTAR $LOGSDIR
 gzip --best $LOGSTAR
-#cp $LOGSTAR.gz ~
+cp $LOGSTAR.gz ~
 echo "$TAG $HOSTNAME DONE!"

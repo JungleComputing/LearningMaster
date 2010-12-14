@@ -3,7 +3,7 @@ run-plain-4-2000.process.count = 4
 run-plain-4-2000.cluster.name = VU
 run-plain-4-2000.pool.name = ping-4-pool
 run-plain-4-2000.application.input.files = settag-ping-4-tags.sh
-run-plain-4-2000.application.output.files = ping.tar.gz
+run-plain-4-2000.application.output.files = ping-fs0.das3.cs.vu.nl.tar.gz
 run-plain-4-2000.application.arguments = 8000
 run-plain-4-2000.resource.count = 4
 

@@ -35,6 +35,9 @@ TestProg.arguments = 10000
 StochasticLearningPing.main.class = ibis.learningmaster.StochasticLearningPing
 StochasticLearningPing.libs = lib
 
+LearningMaster.main.class = ibis.learningmaster.LearningMaster
+LearningMaster.libs = lib
+
 # Application "RegistryBenchmark"
 RegistryBenchmark.main.class = ibis.ipl.benchmarks.registry.Main
 RegistryBenchmark.arguments = --runtime 60

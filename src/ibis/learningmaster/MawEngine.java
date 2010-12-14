@@ -35,31 +35,9 @@ class MawEngine extends Thread implements PacketReceiveListener,
     private long requestsHandlingTime = 0;
     private long idleTime = 0;
     private final boolean isMaster;
-    private final OutstandingRequestList outstandingRequests = new OutstandingRequestList();
+    private final WorkerAdministration workerAdministration = new WorkerAdministration();
 
     private final Scheduler scheduler;
-
-    private static class SleepJob implements AtomicJob, Serializable {
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public boolean isSupported() {
-            return true;
-        }
-
-        @Override
-        public Serializable run(final Serializable input)
-                throws JobFailedException {
-            final Long time = (Long) input;
-            try {
-                Thread.sleep(time);
-            } catch (final InterruptedException e) {
-                // Ignore
-            }
-            return null;
-        }
-
-    }
 
     MawEngine() throws IbisCreationFailedException, IOException {
         super("LearningMaster engine thread");
@@ -74,11 +52,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
                 .elect(MASTER_ELECTION_NAME);
         isMaster = masterIdentifier.equals(myIbis);
         if (isMaster) {
+            // TODO: also use learning scheduler.
             scheduler = new RoundRobinScheduler();
-            // TODO: move the submission of jobs outside MawEngine.
-            for (int i = 0; i < Settings.TASK_COUNT; i++) {
-                scheduler.submitRequest(new SleepJob());
-            }
         } else {
             scheduler = new WorkerScheduler(masterIdentifier);
         }
@@ -201,7 +176,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
             Globals.log.reportProgress("Peer " + peer + " has left");
         }
         activeWorkers--;
-        outstandingRequests.removePeer(peer, scheduler);
+        workerAdministration.removePeer(peer, scheduler);
         scheduler.removePeer(peer);
     }
 
@@ -276,8 +251,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
             workQueue.add(r);
         } else if (msg instanceof TaskCompletedMessage) {
             final TaskCompletedMessage taskCompletedMessage = (TaskCompletedMessage) msg;
-            outstandingRequests.removeTask(taskCompletedMessage.task,
-                    taskCompletedMessage.failed);
+            workerAdministration.removeTask(msg.source,
+                    taskCompletedMessage.task, taskCompletedMessage.failed);
         } else if (msg instanceof RegisterWorkerMessage) {
             final RegisterWorkerMessage registerWorkerMessage = (RegisterWorkerMessage) msg;
             scheduler.workerHasJoined(registerWorkerMessage.source);
@@ -360,7 +335,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
     private boolean maintainOutstandingRequests() {
         final long start = System.nanoTime();
         final boolean progress = scheduler.maintainOutstandingRequests(
-                transmitter, outstandingRequests);
+                transmitter, workerAdministration);
         final long duration = System.nanoTime() - start;
         requestsHandlingTime += duration;
         return progress;
@@ -392,7 +367,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
                 + deletedPeers.size() + " deleted peers");
         transmitter.dumpState();
         scheduler.dumpState();
-        outstandingRequests.dumpState();
+        workerAdministration.dumpState();
     }
 
     @Override
@@ -421,7 +396,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
                             }
                             if (progressRequests) {
                                 scheduler.dumpState();
-                                outstandingRequests.dumpState();
+                                workerAdministration.dumpState();
                             }
                         }
                     }
@@ -429,7 +404,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
                 synchronized (this) {
                     final boolean messageQueueIsEmpty = receivedMessageQueue
                             .isEmpty();
-                    final boolean noRequestsToSubmit = outstandingRequests
+                    final boolean noRequestsToSubmit = workerAdministration
                             .isEmpty() && !scheduler.thereAreRequestsToSubmit();
                     if (noRequestsToSubmit && messageQueueIsEmpty
                             && !stopped.isSet() && newPeers.isEmpty()
@@ -456,7 +431,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
                         dumpEngineState();
                     }
                 }
-                if (outstandingRequests.isEmpty() && scheduler.shouldStop()) {
+                if (workerAdministration.isEmpty() && scheduler.shouldStop()) {
                     stopped.set();
                 }
             }
@@ -484,5 +459,13 @@ class MawEngine extends Thread implements PacketReceiveListener,
     @Override
     public Ibis getLocalIbis() {
         return localIbis;
+    }
+
+    public boolean isMaster() {
+        return isMaster;
+    }
+
+    public void submitRequest(final AtomicJob job) {
+        scheduler.submitRequest(job);
     }
 }

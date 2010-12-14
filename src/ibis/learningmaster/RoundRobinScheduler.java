@@ -65,7 +65,7 @@ class RoundRobinScheduler implements Scheduler {
 
     @Override
     public boolean maintainOutstandingRequests(final Transmitter transmitter,
-            final OutstandingRequestList outstandingRequests) {
+            final WorkerAdministration outstandingRequests) {
         if (jobQueue.isEmpty()) {
             // There are no tasks to submit.
             return false;

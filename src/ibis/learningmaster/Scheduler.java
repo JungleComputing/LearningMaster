@@ -27,7 +27,7 @@ interface Scheduler {
     boolean thereAreRequestsToSubmit();
 
     boolean maintainOutstandingRequests(Transmitter transmitter,
-            OutstandingRequestList outstandingRequests);
+            WorkerAdministration outstandingRequests);
 
     void submitRequest(AtomicJob job);
 }

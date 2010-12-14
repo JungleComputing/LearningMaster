@@ -55,7 +55,7 @@ class WorkerScheduler implements Scheduler {
 
     @Override
     public boolean maintainOutstandingRequests(final Transmitter transmitter,
-            OutstandingRequestList outstandingRequests) {
+            WorkerAdministration outstandingRequests) {
         return false;
     }
 
