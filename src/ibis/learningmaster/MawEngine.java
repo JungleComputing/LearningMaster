@@ -39,6 +39,32 @@ class MawEngine extends Thread implements PacketReceiveListener,
 
     private final Scheduler scheduler;
 
+    private static class SleepJob implements AtomicJob, Serializable {
+        private static final long serialVersionUID = 1L;
+
+        public SleepJob() {
+            // TODO Auto-generated constructor stub
+        }
+
+        @Override
+        public boolean isSupported() {
+            return true;
+        }
+
+        @Override
+        public Serializable run(final Serializable input)
+                throws JobFailedException {
+            final Long time = (Long) input;
+            try {
+                Thread.sleep(time);
+            } catch (final InterruptedException e) {
+                // Ignore
+            }
+            return null;
+        }
+
+    }
+
     MawEngine() throws IbisCreationFailedException, IOException {
         super("LearningMaster engine thread");
         transmitter = new Transmitter(this);
