@@ -63,6 +63,10 @@ class WorkerAdministration {
         }
     }
 
+    void addWorker(final IbisIdentifier worker) {
+        workerInfo.put(worker, new WorkerInfo());
+    }
+
     int addRequest(final IbisIdentifier worker, final JobInstance job) {
         final WorkerInfo info = workerInfo.get(worker);
         if (info == null) {
@@ -90,7 +94,7 @@ class WorkerAdministration {
     }
 
     boolean isEmpty() {
-        return outstandingRequests > 0;
+        return outstandingRequests < 1;
     }
 
     @SuppressWarnings("synthetic-access")

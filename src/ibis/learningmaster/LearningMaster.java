@@ -80,6 +80,7 @@ class LearningMaster {
                 for (int i = 0; i < Settings.TASK_COUNT; i++) {
                     e.submitRequest(new SleepJob(), SLEEP_TIME);
                 }
+                e.endRequests();
             }
             e.start();
             e.join();

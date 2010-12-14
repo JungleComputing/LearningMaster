@@ -8,7 +8,7 @@ package ibis.learningmaster;
 class Flag {
     private boolean flag;
 
-    Flag(boolean flag) {
+    Flag(final boolean flag) {
         this.flag = flag;
     }
 
@@ -16,7 +16,7 @@ class Flag {
         set(true);
     }
 
-    private synchronized void set(boolean val) {
+    synchronized void set(final boolean val) {
         final boolean changed = flag != val;
         flag = val;
         if (changed) {

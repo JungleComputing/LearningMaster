@@ -24,6 +24,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
             Settings.MAXIMAL_RECEIVED_MESSAGE_QUEUE_LENGTH);
     private final TimeStatistics receivedMessageQueueStatistics = new TimeStatistics();
     private final Flag stopped = new Flag(false);
+    private final Flag waitingForRequests = new Flag(true);
     private final Transmitter transmitter;
     private final ConcurrentLinkedQueue<IbisIdentifier> deletedPeers = new ConcurrentLinkedQueue<IbisIdentifier>();
     private final ConcurrentLinkedQueue<IbisIdentifier> newPeers = new ConcurrentLinkedQueue<IbisIdentifier>();
@@ -56,6 +57,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
             scheduler = new RoundRobinScheduler();
         } else {
             scheduler = new WorkerScheduler(masterIdentifier);
+            waitingForRequests.set(false);
         }
         receivePort = new PacketUpcallReceivePort(localIbis,
                 Globals.receivePortName, this);
@@ -255,7 +257,9 @@ class MawEngine extends Thread implements PacketReceiveListener,
                     taskCompletedMessage.task, taskCompletedMessage.failed);
         } else if (msg instanceof RegisterWorkerMessage) {
             final RegisterWorkerMessage registerWorkerMessage = (RegisterWorkerMessage) msg;
-            scheduler.workerHasJoined(registerWorkerMessage.source);
+            final IbisIdentifier worker = registerWorkerMessage.source;
+            workerAdministration.addWorker(worker);
+            scheduler.workerHasJoined(worker);
         } else {
             Globals.log.reportInternalError("Don't know how to handle a "
                     + msg.getClass() + " message");
@@ -352,7 +356,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
     }
 
     private synchronized void dumpEngineState() {
-        Globals.log.reportProgress("Main thread was only woken by timeout");
+        Globals.log
+                .reportProgress("=== Main thread was only woken by timeout ===");
         receivedMessageQueue.dump();
         receivedMessageQueueStatistics.printStatistics(
                 Globals.log.getPrintStream(), "receive queue linger time");
@@ -368,6 +373,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
         transmitter.dumpState();
         scheduler.dumpState();
         workerAdministration.dumpState();
+        Globals.log.reportProgress("=== End of dump of engine state ===");
     }
 
     @Override
@@ -401,6 +407,14 @@ class MawEngine extends Thread implements PacketReceiveListener,
                         }
                     }
                 } while (progress);
+                if (!waitingForRequests.isSet()
+                        && workerAdministration.isEmpty()
+                        && scheduler.shouldStop()) {
+                    Globals.log
+                            .reportProgress("Setting engine to stopped state");
+                    stopped.set();
+                    break;
+                }
                 synchronized (this) {
                     final boolean messageQueueIsEmpty = receivedMessageQueue
                             .isEmpty();
@@ -430,9 +444,6 @@ class MawEngine extends Thread implements PacketReceiveListener,
                     if (activeWorkers > 0) {
                         dumpEngineState();
                     }
-                }
-                if (workerAdministration.isEmpty() && scheduler.shouldStop()) {
-                    stopped.set();
                 }
             }
         } finally {
@@ -467,5 +478,12 @@ class MawEngine extends Thread implements PacketReceiveListener,
 
     public void submitRequest(final AtomicJob job, final Serializable input) {
         scheduler.submitRequest(job, input);
+    }
+
+    public void endRequests() {
+        Globals.log
+                .reportProgress("All requests have been submitted; waiting for work queue to drain");
+        waitingForRequests.set(false);
+        wakeEngineThread();
     }
 }

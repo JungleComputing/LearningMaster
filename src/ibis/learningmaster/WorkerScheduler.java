@@ -24,7 +24,12 @@ class WorkerScheduler implements Scheduler {
     @Override
     public void removePeer(final IbisIdentifier peer) {
         if (peer.equals(master)) {
+            Globals.log.reportProgress("Peer " + peer
+                    + " has gone, and was our master");
             masterHasGone = true;
+        } else {
+            Globals.log.reportProgress("Peer " + peer
+                    + " has gone, and was a worker");
         }
     }
 
