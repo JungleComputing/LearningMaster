@@ -26,9 +26,9 @@ class MawEngine extends Thread implements PacketReceiveListener,
     private final Flag stopped = new Flag(false);
     private final Flag waitingForRequests = new Flag(true);
     private final Transmitter transmitter;
-    private final ConcurrentLinkedQueue<IbisIdentifier> deletedPeers = new ConcurrentLinkedQueue<IbisIdentifier>();
-    private final ConcurrentLinkedQueue<IbisIdentifier> newPeers = new ConcurrentLinkedQueue<IbisIdentifier>();
-    private final ConcurrentLinkedQueue<ExecuteTaskMessage> workQueue = new ConcurrentLinkedQueue<ExecuteTaskMessage>();
+    private final ConcurrentLinkedQueue<IbisIdentifier> deletedNodes = new ConcurrentLinkedQueue<IbisIdentifier>();
+    private final ConcurrentLinkedQueue<IbisIdentifier> newWorkers = new ConcurrentLinkedQueue<IbisIdentifier>();
+    private final ConcurrentLinkedQueue<ExecuteJobMessage> workQueue = new ConcurrentLinkedQueue<ExecuteJobMessage>();
     private final PacketUpcallReceivePort receivePort;
     private final Ibis localIbis;
     private int activeWorkers = 0;
@@ -79,31 +79,31 @@ class MawEngine extends Thread implements PacketReceiveListener,
     }
 
     @Override
-    public void died(final IbisIdentifier peer) {
-        if (peer.equals(localIbis.identifier())) {
+    public void died(final IbisIdentifier worker) {
+        if (worker.equals(localIbis.identifier())) {
             if (!stopped.isSet()) {
                 Globals.log
-                        .reportError("This peer has been declared dead, we might as well stop");
+                        .reportError("This worker has been declared dead, we might as well stop");
                 setStopped();
             }
         } else {
-            transmitter.deletePeer(peer);
-            deletedPeers.add(peer);
+            transmitter.deleteNode(worker);
+            deletedNodes.add(worker);
         }
         wakeEngineThread(); // Something interesting has happened.
     }
 
     @Override
-    public void left(final IbisIdentifier peer) {
-        if (peer.equals(localIbis.identifier())) {
+    public void left(final IbisIdentifier worker) {
+        if (worker.equals(localIbis.identifier())) {
             if (!stopped.isSet()) {
                 Globals.log
-                        .reportError("This peer has been declared `left', we might as well stop");
+                        .reportError("This worker has been declared `left', we might as well stop");
                 setStopped();
             }
         } else {
-            transmitter.deletePeer(peer);
-            deletedPeers.add(peer);
+            transmitter.deleteNode(worker);
+            deletedNodes.add(worker);
         }
         wakeEngineThread(); // Something interesting has happened.
     }
@@ -119,17 +119,17 @@ class MawEngine extends Thread implements PacketReceiveListener,
     }
 
     @Override
-    public void joined(final IbisIdentifier peer) {
-        newPeers.add(peer);
+    public void joined(final IbisIdentifier worker) {
+        newWorkers.add(worker);
         if (Settings.TraceEngine) {
-            Globals.log.reportProgress("New peer " + peer);
+            Globals.log.reportProgress("New worker " + worker);
         }
         wakeEngineThread(); // Something interesting has happened.
     }
 
     /**
-     * Register the fact that no new peers can join this pool. Not relevant, so
-     * we ignore this.
+     * Register the fact that no new workers can join this pool. Not relevant,
+     * so we ignore this.
      */
     @Override
     public void poolClosed() {
@@ -144,29 +144,29 @@ class MawEngine extends Thread implements PacketReceiveListener,
     /**
      * This ibis was reported as 'may be dead'. Try not to communicate with it.
      * 
-     * @param peer
-     *            The peer that may be dead.
+     * @param node
+     *            The node that may be dead.
      */
     @Override
-    public void setSuspect(final IbisIdentifier peer) {
-        if (Settings.TracePeers) {
-            Globals.log.reportProgress(true, "Peer " + peer + " may be dead");
+    public void setSuspect(final IbisIdentifier node) {
+        if (Settings.TraceNodes) {
+            Globals.log.reportProgress(true, "Node " + node + " may be dead");
         }
         try {
-            localIbis.registry().assumeDead(peer);
+            localIbis.registry().assumeDead(node);
         } catch (final IOException e) {
             // Nothing we can do about it.
         }
     }
 
-    private void registerNewPeer(final IbisIdentifier peer) {
-        if (peer.equals(localIbis.identifier())) {
+    private void registerNewNode(final IbisIdentifier node) {
+        if (node.equals(localIbis.identifier())) {
             // That's the local node. Ignore.
             return;
         }
         activeWorkers++;
-        if (Settings.TracePeers) {
-            Globals.log.reportProgress("Peer " + peer + " has joined");
+        if (Settings.TraceNodes) {
+            Globals.log.reportProgress("Node " + node + " has joined");
         }
         /*
          * We only add it to the administration when it has sent a join message.
@@ -174,17 +174,17 @@ class MawEngine extends Thread implements PacketReceiveListener,
          */
     }
 
-    private void registerPeerLeft(final IbisIdentifier peer) {
-        if (Settings.TracePeers) {
-            Globals.log.reportProgress("Peer " + peer + " has left");
+    private void registerNodeLeft(final IbisIdentifier node) {
+        if (Settings.TraceNodes) {
+            Globals.log.reportProgress("Node " + node + " has left");
         }
         activeWorkers--;
-        workerAdministration.removePeer(peer, scheduler);
-        scheduler.removePeer(peer);
+        workerAdministration.removeWorker(node, scheduler);
+        scheduler.removeNode(node);
     }
 
     /**
-     * Handle any new and deleted peers that have been registered after the last
+     * Handle any new and deleted nodes that have been registered after the last
      * call.
      * 
      * @return <code>true</code> iff we made any changes to the node state.
@@ -192,19 +192,19 @@ class MawEngine extends Thread implements PacketReceiveListener,
     private boolean registerNewAndDeletedNodes() {
         boolean changes = false;
         while (true) {
-            final IbisIdentifier peer = deletedPeers.poll();
-            if (peer == null) {
+            final IbisIdentifier node = deletedNodes.poll();
+            if (node == null) {
                 break;
             }
-            registerPeerLeft(peer);
+            registerNodeLeft(node);
             changes = true;
         }
         while (true) {
-            final IbisIdentifier peer = newPeers.poll();
-            if (peer == null) {
+            final IbisIdentifier node = newWorkers.poll();
+            if (node == null) {
                 break;
             }
-            registerNewPeer(peer);
+            registerNewNode(node);
             changes = true;
         }
         return changes;
@@ -249,13 +249,13 @@ class MawEngine extends Thread implements PacketReceiveListener,
      *            The incoming message.
      */
     private void handleMessage(final Message msg) {
-        if (msg instanceof ExecuteTaskMessage) {
-            final ExecuteTaskMessage r = (ExecuteTaskMessage) msg;
+        if (msg instanceof ExecuteJobMessage) {
+            final ExecuteJobMessage r = (ExecuteJobMessage) msg;
             workQueue.add(r);
-        } else if (msg instanceof TaskCompletedMessage) {
-            final TaskCompletedMessage taskCompletedMessage = (TaskCompletedMessage) msg;
-            workerAdministration.removeTask(msg.source,
-                    taskCompletedMessage.task, taskCompletedMessage.failed);
+        } else if (msg instanceof JobCompletedMessage) {
+            final JobCompletedMessage jobCompletedMessage = (JobCompletedMessage) msg;
+            workerAdministration.removeJob(msg.source,
+                    jobCompletedMessage.jobNo, jobCompletedMessage.failed);
         } else if (msg instanceof RegisterWorkerMessage) {
             final RegisterWorkerMessage registerWorkerMessage = (RegisterWorkerMessage) msg;
             final IbisIdentifier worker = registerWorkerMessage.source;
@@ -288,13 +288,13 @@ class MawEngine extends Thread implements PacketReceiveListener,
     }
 
     /**
-     * If the work queue is not empty, get a task request from the work queue
-     * and handle it.
+     * If the work queue is not empty, get a job request from the work queue and
+     * handle it.
      * 
-     * @return <code>true</code> iff we actually handled a task request.
+     * @return <code>true</code> iff we actually handled a job request.
      */
     private boolean handleAWorkRequest() {
-        final ExecuteTaskMessage request = workQueue.poll();
+        final ExecuteJobMessage request = workQueue.poll();
 
         if (request == null) {
             if (Settings.TraceWorker) {
@@ -328,7 +328,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
         if (Settings.TraceWorker) {
             Globals.log.reportProgress("Ended execution of job " + job);
         }
-        final Message msg = new TaskCompletedMessage(request.id, res, failed,
+        final Message msg = new JobCompletedMessage(request.id, res, failed,
                 1e-9 * (endTime - startTime));
         transmitter.addToBookkeepingQueue(request.source, msg);
         return true;
@@ -370,7 +370,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
                 + Utils.formatSeconds(1e-9 * requestsHandlingTime) + " idle "
                 + Utils.formatSeconds(1e-3 * idleTime));
         Globals.log.reportProgress("Engine: " + activeWorkers + " active, "
-                + deletedPeers.size() + " deleted peers");
+                + deletedNodes.size() + " deleted nodes");
         transmitter.dumpState();
         scheduler.dumpState();
         workerAdministration.dumpState();
@@ -422,8 +422,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
                     final boolean noRequestsToSubmit = workerAdministration
                             .isEmpty() && !scheduler.thereAreRequestsToSubmit();
                     if (noRequestsToSubmit && messageQueueIsEmpty
-                            && !stopped.isSet() && newPeers.isEmpty()
-                            && deletedPeers.isEmpty() && workQueue.isEmpty()) {
+                            && !stopped.isSet() && newWorkers.isEmpty()
+                            && deletedNodes.isEmpty() && workQueue.isEmpty()) {
                         try {
                             final long sleepStartTime = System
                                     .currentTimeMillis();

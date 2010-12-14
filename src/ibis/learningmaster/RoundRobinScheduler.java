@@ -8,16 +8,16 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
- * Schedule tasks one by one on the available workers. Note that there is always
- * at most one outstanding task. This is not realistic, but for the purposes of
+ * Schedule jobs one by one on the available workers. Note that there is always
+ * at most one outstanding job. This is not realistic, but for the purposes of
  * learning behavior it is simpler.
  * 
  * @author Kees van Reeuwijk
  * 
  */
 class RoundRobinScheduler implements Scheduler {
-    private final ArrayList<IbisIdentifier> peers = new ArrayList<IbisIdentifier>();
-    private int nextPeer = 0;
+    private final ArrayList<IbisIdentifier> workers = new ArrayList<IbisIdentifier>();
+    private int nextWorker = 0;
     private final LinkedList<JobInstance> jobQueue = new LinkedList<JobInstance>();
 
     @Override
@@ -26,28 +26,28 @@ class RoundRobinScheduler implements Scheduler {
     }
 
     /**
-     * Removes the given peer from our list of workers.
+     * Removes the given worker from our list of workers.
      */
     @Override
-    public void removePeer(final IbisIdentifier peer) {
-        peers.remove(peer);
+    public void removeNode(final IbisIdentifier worker) {
+        workers.remove(worker);
     }
 
     @Override
     public void dumpState() {
-        Globals.log.reportProgress("RoundRobinScheduler: peers="
-                + peers.toString());
+        Globals.log.reportProgress("RoundRobinScheduler: workers="
+                + workers.toString());
     }
 
     /**
-     * Adds the given peer to our list of workers.
+     * Adds the given worker to our list of workers.
      * 
-     * @param peer
+     * @param worker
      *            The worker to add.
      */
     @Override
-    public void workerHasJoined(final IbisIdentifier peer) {
-        peers.add(peer);
+    public void workerHasJoined(final IbisIdentifier worker) {
+        workers.add(worker);
     }
 
     @Override
@@ -60,7 +60,7 @@ class RoundRobinScheduler implements Scheduler {
     }
 
     @Override
-    public void returnTask(final JobInstance job) {
+    public void returnJob(final JobInstance job) {
         jobQueue.add(job);
     }
 
@@ -68,21 +68,21 @@ class RoundRobinScheduler implements Scheduler {
     public boolean maintainOutstandingRequests(final Transmitter transmitter,
             final WorkerAdministration outstandingRequests) {
         if (jobQueue.isEmpty()) {
-            // There are no tasks to submit.
+            // There are no jobs to submit.
             return false;
         }
-        if (peers.isEmpty()) {
-            // There are no peers to submit tasks to.
+        if (workers.isEmpty()) {
+            // There are no workers to submit jobs to.
             return false;
         }
-        if (nextPeer >= peers.size()) {
-            nextPeer = 0;
+        if (nextWorker >= workers.size()) {
+            nextWorker = 0;
         }
-        final IbisIdentifier worker = peers.get(nextPeer);
-        nextPeer++;
+        final IbisIdentifier worker = workers.get(nextWorker);
+        nextWorker++;
         final JobInstance job = jobQueue.removeFirst();
         final int id = outstandingRequests.addRequest(worker, job);
-        final ExecuteTaskMessage rq = new ExecuteTaskMessage(job.job, id,
+        final ExecuteJobMessage rq = new ExecuteJobMessage(job.job, id,
                 job.input);
         transmitter.addToRequestQueue(worker, rq);
         return true;

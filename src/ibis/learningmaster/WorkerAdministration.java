@@ -22,7 +22,7 @@ class WorkerAdministration {
         synchronized void returnRequests(final Scheduler scheduler) {
             for (final OutstandingRequest r : requests) {
                 requests.remove(r);
-                scheduler.returnTask(r.job);
+                scheduler.returnJob(r.job);
                 Globals.log.reportProgress("Returning request " + r
                         + " to scheduler, since this worker has gone");
             }
@@ -33,7 +33,8 @@ class WorkerAdministration {
             deleted = true;
         }
 
-        synchronized void removeTask(final int id) {
+        @SuppressWarnings("synthetic-access")
+        synchronized void removeJob(final int id) {
             for (final OutstandingRequest r : requests) {
                 if (r.id == id) {
                     Globals.log.reportProgress("Returning request " + r
@@ -94,9 +95,8 @@ class WorkerAdministration {
     void dumpState() {
     }
 
-    @SuppressWarnings("synthetic-access")
-    void removePeer(final IbisIdentifier peer, final Scheduler scheduler) {
-        final WorkerInfo info = workerInfo.get(peer);
+    void removeWorker(final IbisIdentifier worker, final Scheduler scheduler) {
+        final WorkerInfo info = workerInfo.get(worker);
         if (info != null) {
             info.setDeleted();
             info.returnRequests(scheduler);
@@ -107,16 +107,15 @@ class WorkerAdministration {
         return outstandingRequests < 1;
     }
 
-    @SuppressWarnings("synthetic-access")
-    boolean removeTask(final IbisIdentifier worker, final int id,
+    boolean removeJob(final IbisIdentifier worker, final int id,
             final boolean failed) {
         outstandingRequests--;
         if (failed) {
-            Globals.log.reportError("Task  " + id + " failed");
+            Globals.log.reportError("Job  " + id + " failed");
         }
         final WorkerInfo info = workerInfo.get(worker);
         if (info != null) {
-            info.removeTask(id);
+            info.removeJob(id);
         }
         return false;
     }

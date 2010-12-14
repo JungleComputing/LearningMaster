@@ -22,13 +22,13 @@ class WorkerScheduler implements Scheduler {
     }
 
     @Override
-    public void removePeer(final IbisIdentifier peer) {
-        if (peer.equals(master)) {
-            Globals.log.reportProgress("Peer " + peer
+    public void removeNode(final IbisIdentifier node) {
+        if (node.equals(master)) {
+            Globals.log.reportProgress("Node " + node
                     + " has gone, and was our master");
             masterHasGone = true;
         } else {
-            Globals.log.reportProgress("Peer " + peer
+            Globals.log.reportProgress("Node " + node
                     + " has gone, and was a worker");
         }
     }
@@ -54,9 +54,9 @@ class WorkerScheduler implements Scheduler {
     }
 
     @Override
-    public void returnTask(final JobInstance id) {
+    public void returnJob(final JobInstance id) {
         Globals.log
-                .reportInternalError("Someone tried to return a task to the worker scheduler");
+                .reportInternalError("Someone tried to return a job to the worker scheduler");
     }
 
     @Override

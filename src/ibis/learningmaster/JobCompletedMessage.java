@@ -3,22 +3,22 @@ package ibis.learningmaster;
 import java.io.Serializable;
 
 /**
- * A message from a worker to a master, telling it it has completed task 'task'.
+ * A message from a worker to a master, telling it it has completed a job.
  * 
  * @author Kees van Reeuwijk
  * 
  */
-class TaskCompletedMessage extends Message {
+class JobCompletedMessage extends Message {
     private static final long serialVersionUID = 1L;
 
-    final int task;
+    final int jobNo;
     final Serializable result;
     final boolean failed;
     final double completionTime;
 
-    TaskCompletedMessage(final int task, final Serializable res,
+    JobCompletedMessage(final int jobNo, final Serializable res,
             final boolean failed, final double completionTime) {
-        this.task = task;
+        this.jobNo = jobNo;
         this.result = res;
         this.failed = failed;
         this.completionTime = completionTime;
@@ -26,6 +26,6 @@ class TaskCompletedMessage extends Message {
 
     @Override
     public String toString() {
-        return "TaskCompletedMessage[" + task + "]";
+        return "JobCompletedMessage[" + jobNo + "]";
     }
 }

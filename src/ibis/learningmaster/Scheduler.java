@@ -8,7 +8,7 @@ import java.io.Serializable;
 interface Scheduler {
     void shutdown();
 
-    void removePeer(IbisIdentifier peer);
+    void removeNode(IbisIdentifier worker);
 
     void dumpState();
 
@@ -23,7 +23,7 @@ interface Scheduler {
      */
     boolean shouldStop();
 
-    void returnTask(JobInstance j);
+    void returnJob(JobInstance j);
 
     boolean thereAreRequestsToSubmit();
 

@@ -20,11 +20,7 @@ class LearningMaster {
         System.err.println("Error: " + msg);
         System.err.println("Usage: LearningMaster <option>] ... <option>");
         System.err.println("Where <option> is:");
-        System.err
-                .println(" --dummyfile\tShare a dummy file instead of a real one");
-        System.err
-                .println(" --proxymode\tRun proxy mode with the leecher hiding behind helpers");
-        System.err.println(" --helper\tPeer is a helper in a proxy-mode setup");
+        System.err.println(" --worker\tNode is a worker");
         System.err.println("Actual arguments: " + Arrays.deepToString(args));
         throw new Error("Bad command-line arguments");
     }
@@ -77,7 +73,7 @@ class LearningMaster {
         try {
             final MawEngine e = new MawEngine();
             if (e.isMaster()) {
-                for (int i = 0; i < Settings.TASK_COUNT; i++) {
+                for (int i = 0; i < Settings.JOB_COUNT; i++) {
                     e.submitRequest(new SleepJob(), SLEEP_TIME);
                 }
                 e.endRequests();

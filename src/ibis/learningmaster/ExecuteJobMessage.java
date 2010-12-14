@@ -2,7 +2,7 @@ package ibis.learningmaster;
 
 import java.io.Serializable;
 
-class ExecuteTaskMessage extends SmallMessage {
+class ExecuteJobMessage extends SmallMessage {
     private static final long serialVersionUID = 1L;
 
     final Job job;
@@ -11,7 +11,7 @@ class ExecuteTaskMessage extends SmallMessage {
 
     final Serializable input;
 
-    ExecuteTaskMessage(final Job job, final int id, final Serializable input) {
+    ExecuteJobMessage(final Job job, final int id, final Serializable input) {
         this.job = job;
         this.id = id;
         this.input = input;
@@ -19,10 +19,10 @@ class ExecuteTaskMessage extends SmallMessage {
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof ExecuteTaskMessage)) {
+        if (!(obj instanceof ExecuteJobMessage)) {
             return false;
         }
-        final ExecuteTaskMessage other = (ExecuteTaskMessage) obj;
+        final ExecuteJobMessage other = (ExecuteJobMessage) obj;
         return source.equals(other.source) && job.equals(other.job);
     }
 

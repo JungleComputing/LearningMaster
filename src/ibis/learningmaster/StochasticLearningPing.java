@@ -437,7 +437,7 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
                 setStopped();
             }
         } else {
-            transmitter.deletePeer(peer);
+            transmitter.deleteNode(peer);
             deletedPeers.add(peer);
         }
         wakeEngineThread(); // Something interesting has happened.
@@ -471,7 +471,7 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
                 setStopped();
             }
         } else {
-            transmitter.deletePeer(peer);
+            transmitter.deleteNode(peer);
             deletedPeers.add(peer);
         }
         wakeEngineThread(); // Something interesting has happened.

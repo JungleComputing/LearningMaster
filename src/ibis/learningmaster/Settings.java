@@ -29,7 +29,7 @@ class Settings {
 
     static final boolean TraceNodeCreation = true;
     static final boolean TraceEngine = false;
-    static final boolean TracePeers = false;
+    static final boolean TraceNodes = false;
     static final boolean TraceDetailedProgress = false;
     static final boolean TraceTransmitter = false;
     static final boolean TraceReceiver = false;
@@ -39,8 +39,8 @@ class Settings {
 
     static final int MAXIMAL_ENGINE_SLEEP_INTERVAL = 2000;
 
-    static final int TASK_COUNT = 200;
+    static final int JOB_COUNT = 200;
 
     // 5 seconds
-    static final int TASK_DURATION = 1000 * 5;
+    static final int JOB_DURATION = 1000 * 5;
 }

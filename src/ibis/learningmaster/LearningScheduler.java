@@ -13,25 +13,25 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Schedule tasks one by one on the available workers. Note that there is always
- * at most one outstanding task. This is not realistic, but for the purposes of
+ * Schedule jobs one by one on the available workers. Note that there is always
+ * at most one outstanding job. This is not realistic, but for the purposes of
  * learning behavior it is simpler.
  * 
  * @author Kees van Reeuwijk
  * 
  */
 class LearningScheduler implements Scheduler {
-    private final ArrayList<PeerInfo> peers = new ArrayList<PeerInfo>();
+    private final ArrayList<WorkerInfo> workers = new ArrayList<WorkerInfo>();
     private final LinkedList<JobInstance> jobQueue = new LinkedList<JobInstance>();
     private static final double DECAY_FACTOR = 0.1;
     private static final int MAXIMAL_OUTSTANDING_JOBS = 2;
 
-    private static class PeerInfo {
+    private static class WorkerInfo {
         final IbisIdentifier node;
         final Estimator workTimeEstimator;
         boolean deleted = false;
 
-        PeerInfo(final IbisIdentifier node) {
+        WorkerInfo(final IbisIdentifier node) {
             super();
             this.node = node;
             // TODO: better initial estimate.
@@ -46,7 +46,7 @@ class LearningScheduler implements Scheduler {
         }
     }
 
-    private static int searchPeerInfoList(final List<PeerInfo> l,
+    private static int searchWorkerInfoList(final List<WorkerInfo> l,
             final IbisIdentifier node) {
         for (int i = 0; i < l.size(); i++) {
             if (node.equals(l.get(i).node)) {
@@ -62,13 +62,13 @@ class LearningScheduler implements Scheduler {
     }
 
     /**
-     * Removes the given peer from our list of workers.
+     * Removes the given worker from our list of workers.
      */
     @Override
-    public void removePeer(final IbisIdentifier peer) {
-        final int ix = searchPeerInfoList(peers, peer);
+    public void removeNode(final IbisIdentifier worker) {
+        final int ix = searchWorkerInfoList(workers, worker);
         if (ix >= 0) {
-            final PeerInfo info = peers.remove(ix);
+            final WorkerInfo info = workers.remove(ix);
             if (info != null) {
                 info.setDeleted();
             }
@@ -77,19 +77,19 @@ class LearningScheduler implements Scheduler {
 
     @Override
     public void dumpState() {
-        Globals.log.reportProgress("RoundRobinScheduler: peers="
-                + peers.toString());
+        Globals.log.reportProgress("RoundRobinScheduler: workers="
+                + workers.toString());
     }
 
     /**
-     * Adds the given peer to our list of workers.
+     * Adds the given worker to our list of workers.
      * 
-     * @param peer
+     * @param worker
      *            The worker to add.
      */
     @Override
-    public void workerHasJoined(final IbisIdentifier peer) {
-        peers.add(new PeerInfo(peer));
+    public void workerHasJoined(final IbisIdentifier worker) {
+        workers.add(new WorkerInfo(worker));
     }
 
     @Override
@@ -102,15 +102,15 @@ class LearningScheduler implements Scheduler {
     }
 
     @Override
-    public void returnTask(final JobInstance job) {
+    public void returnJob(final JobInstance job) {
         jobQueue.add(job);
     }
 
-    private PeerInfo selectBestPeer(
+    private WorkerInfo selectBestWorker(
             final WorkerAdministration workerAdministration) {
-        PeerInfo bestWorker = null;
+        WorkerInfo bestWorker = null;
         double bestResult = Double.POSITIVE_INFINITY;
-        for (final PeerInfo p : peers) {
+        for (final WorkerInfo p : workers) {
             if (workerAdministration.hasRoomForJob(p.node,
                     MAXIMAL_OUTSTANDING_JOBS)) {
                 final Estimate est = p.workTimeEstimator.getEstimate();
@@ -128,21 +128,21 @@ class LearningScheduler implements Scheduler {
     public boolean maintainOutstandingRequests(final Transmitter transmitter,
             final WorkerAdministration workerAdministration) {
         if (jobQueue.isEmpty()) {
-            // There are no tasks to submit.
+            // There are no jobs to submit.
             return false;
         }
-        if (peers.isEmpty()) {
-            // There are no peers to submit tasks to.
+        if (workers.isEmpty()) {
+            // There are no workers to submit jobs to.
             return false;
         }
-        final PeerInfo worker = selectBestPeer(workerAdministration);
+        final WorkerInfo worker = selectBestWorker(workerAdministration);
         if (worker == null) {
             return false;
         }
         final JobInstance job = jobQueue.removeFirst();
         final int id = workerAdministration.addRequest(worker.node, job);
-        // FIXME: properly handle task input
-        final ExecuteTaskMessage rq = new ExecuteTaskMessage(job.job, id,
+        // FIXME: properly handle job input
+        final ExecuteJobMessage rq = new ExecuteJobMessage(job.job, id,
                 job.input);
         transmitter.addToRequestQueue(worker.node, rq);
         return true;
