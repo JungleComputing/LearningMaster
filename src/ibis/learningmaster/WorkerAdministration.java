@@ -46,12 +46,12 @@ class WorkerAdministration {
     }
 
     private static class OutstandingRequest {
-        private final Job job;
+        private final JobInstance job;
         private final int id;
         private final IbisIdentifier worker;
 
-        public OutstandingRequest(final IbisIdentifier worker, final Job job,
-                final int id) {
+        public OutstandingRequest(final IbisIdentifier worker,
+                final JobInstance job, final int id) {
             this.job = job;
             this.id = id;
             this.worker = worker;
@@ -63,7 +63,7 @@ class WorkerAdministration {
         }
     }
 
-    int addRequest(final IbisIdentifier worker, final Job job) {
+    int addRequest(final IbisIdentifier worker, final JobInstance job) {
         final WorkerInfo info = workerInfo.get(worker);
         if (info == null) {
             Globals.log.reportInternalError("Ibis '" + worker

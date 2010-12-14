@@ -14,6 +14,8 @@ import java.util.Properties;
  * 
  */
 class LearningMaster {
+    static final long SLEEP_TIME = 300;
+
     private static void usage(final String msg, final String args[]) {
         System.err.println("Error: " + msg);
         System.err.println("Usage: LearningMaster <option>] ... <option>");
@@ -76,7 +78,7 @@ class LearningMaster {
             final MawEngine e = new MawEngine();
             if (e.isMaster()) {
                 for (int i = 0; i < Settings.TASK_COUNT; i++) {
-                    e.submitRequest(new SleepJob());
+                    e.submitRequest(new SleepJob(), SLEEP_TIME);
                 }
             }
             e.start();

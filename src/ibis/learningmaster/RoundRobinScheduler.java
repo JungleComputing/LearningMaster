@@ -3,6 +3,7 @@ package ibis.learningmaster;
 import ibis.ipl.IbisIdentifier;
 
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -17,7 +18,7 @@ import java.util.LinkedList;
 class RoundRobinScheduler implements Scheduler {
     private final ArrayList<IbisIdentifier> peers = new ArrayList<IbisIdentifier>();
     private int nextPeer = 0;
-    private final LinkedList<Job> jobQueue = new LinkedList<Job>();
+    private final LinkedList<JobInstance> jobQueue = new LinkedList<JobInstance>();
 
     @Override
     public void shutdown() {
@@ -59,7 +60,7 @@ class RoundRobinScheduler implements Scheduler {
     }
 
     @Override
-    public void returnTask(final Job job) {
+    public void returnTask(final JobInstance job) {
         jobQueue.add(job);
     }
 
@@ -74,14 +75,15 @@ class RoundRobinScheduler implements Scheduler {
             // There are no peers to submit tasks to.
             return false;
         }
-        final Job job = jobQueue.removeFirst();
+        final JobInstance job = jobQueue.removeFirst();
         if (nextPeer >= peers.size()) {
             nextPeer = 0;
         }
         final IbisIdentifier worker = peers.get(nextPeer);
         nextPeer++;
         final int id = outstandingRequests.addRequest(worker, job);
-        final ExecuteTaskMessage rq = new ExecuteTaskMessage(job, id, null);
+        final ExecuteTaskMessage rq = new ExecuteTaskMessage(job.job, id,
+                job.input);
         transmitter.addToRequestQueue(worker, rq);
         return true;
     }
@@ -92,8 +94,8 @@ class RoundRobinScheduler implements Scheduler {
     }
 
     @Override
-    public void submitRequest(final AtomicJob job) {
-        jobQueue.add(job);
+    public void submitRequest(final AtomicJob job, final Serializable input) {
+        jobQueue.add(new JobInstance(job, input));
     }
 
 }

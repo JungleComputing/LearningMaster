@@ -3,6 +3,7 @@ package ibis.learningmaster;
 import ibis.ipl.IbisIdentifier;
 
 import java.io.PrintStream;
+import java.io.Serializable;
 
 /**
  * @author Kees van Reeuwijk
@@ -48,14 +49,14 @@ class WorkerScheduler implements Scheduler {
     }
 
     @Override
-    public void returnTask(final Job id) {
+    public void returnTask(final JobInstance id) {
         Globals.log
                 .reportInternalError("Someone tried to return a task to the worker scheduler");
     }
 
     @Override
     public boolean maintainOutstandingRequests(final Transmitter transmitter,
-            WorkerAdministration outstandingRequests) {
+            final WorkerAdministration outstandingRequests) {
         return false;
     }
 
@@ -65,7 +66,7 @@ class WorkerScheduler implements Scheduler {
     }
 
     @Override
-    public void submitRequest(final AtomicJob job) {
+    public void submitRequest(final AtomicJob job, final Serializable input) {
         throw new Error("Internal error: submitting jobs to a worker scheduler");
     }
 

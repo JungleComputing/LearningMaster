@@ -7,6 +7,7 @@ import ibis.steel.ExponentialDecayLogEstimator;
 import ibis.steel.LogGaussianEstimate;
 
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,7 +22,7 @@ import java.util.List;
  */
 class LearningScheduler implements Scheduler {
     private final ArrayList<PeerInfo> peers = new ArrayList<PeerInfo>();
-    private final LinkedList<Job> jobQueue = new LinkedList<Job>();
+    private final LinkedList<JobInstance> jobQueue = new LinkedList<JobInstance>();
     private static final double DECAY_FACTOR = 0.1;
     private static final int MAXIMAL_OUTSTANDING_JOBS = 2;
 
@@ -115,7 +116,7 @@ class LearningScheduler implements Scheduler {
     }
 
     @Override
-    public void returnTask(final Job job) {
+    public void returnTask(final JobInstance job) {
         jobQueue.add(job);
     }
 
@@ -130,14 +131,15 @@ class LearningScheduler implements Scheduler {
             // There are no peers to submit tasks to.
             return false;
         }
-        final Job job = jobQueue.removeFirst();
+        final JobInstance job = jobQueue.removeFirst();
         final PeerInfo worker = selectBestPeer();
         if (worker == null) {
             return false;
         }
         final int id = outstandingRequests.addRequest(worker.node, job);
         // FIXME: properly handle task input
-        final ExecuteTaskMessage rq = new ExecuteTaskMessage(job, id, null);
+        final ExecuteTaskMessage rq = new ExecuteTaskMessage(job.job, id,
+                job.input);
         transmitter.addToRequestQueue(worker.node, rq);
         worker.registerOutstandingJob();
         return true;
@@ -166,8 +168,8 @@ class LearningScheduler implements Scheduler {
     }
 
     @Override
-    public void submitRequest(final AtomicJob job) {
-        jobQueue.add(job);
+    public void submitRequest(final AtomicJob job, final Serializable input) {
+        jobQueue.add(new JobInstance(job, input));
     }
 
 }

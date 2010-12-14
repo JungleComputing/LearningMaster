@@ -39,32 +39,6 @@ class MawEngine extends Thread implements PacketReceiveListener,
 
     private final Scheduler scheduler;
 
-    private static class SleepJob implements AtomicJob, Serializable {
-        private static final long serialVersionUID = 1L;
-
-        public SleepJob() {
-            // TODO Auto-generated constructor stub
-        }
-
-        @Override
-        public boolean isSupported() {
-            return true;
-        }
-
-        @Override
-        public Serializable run(final Serializable input)
-                throws JobFailedException {
-            final Long time = (Long) input;
-            try {
-                Thread.sleep(time);
-            } catch (final InterruptedException e) {
-                // Ignore
-            }
-            return null;
-        }
-
-    }
-
     MawEngine() throws IbisCreationFailedException, IOException {
         super("LearningMaster engine thread");
         transmitter = new Transmitter(this);
@@ -293,11 +267,11 @@ class MawEngine extends Thread implements PacketReceiveListener,
         boolean progress = false;
         while (true) {
             final Message msg = receivedMessageQueue.getNext();
-            Globals.log.reportProgress("Get incoming message from queue: "
-                    + msg);
             if (msg == null) {
                 break;
             }
+            Globals.log.reportProgress("Get incoming message from queue: "
+                    + msg);
             final long lingerTime = System.nanoTime() - msg.arrivalTime;
             receivedMessageQueueStatistics.registerSample(lingerTime * 1e-9);
             handleMessage(msg);
@@ -491,7 +465,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
         return isMaster;
     }
 
-    public void submitRequest(final AtomicJob job) {
-        scheduler.submitRequest(job);
+    public void submitRequest(final AtomicJob job, final Serializable input) {
+        scheduler.submitRequest(job, input);
     }
 }

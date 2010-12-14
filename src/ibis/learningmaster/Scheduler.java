@@ -3,6 +3,7 @@ package ibis.learningmaster;
 import ibis.ipl.IbisIdentifier;
 
 import java.io.PrintStream;
+import java.io.Serializable;
 
 interface Scheduler {
     void shutdown();
@@ -22,12 +23,12 @@ interface Scheduler {
      */
     boolean shouldStop();
 
-    void returnTask(Job id);
+    void returnTask(JobInstance j);
 
     boolean thereAreRequestsToSubmit();
 
     boolean maintainOutstandingRequests(Transmitter transmitter,
             WorkerAdministration outstandingRequests);
 
-    void submitRequest(AtomicJob job);
+    void submitRequest(AtomicJob job, Serializable input);
 }
