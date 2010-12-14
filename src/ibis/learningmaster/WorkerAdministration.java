@@ -29,10 +29,11 @@ class WorkerAdministration {
         }
 
         synchronized void setDeleted() {
+            requests.clear();
             deleted = true;
         }
 
-        public void removeTask(final int id) {
+        synchronized void removeTask(final int id) {
             for (final OutstandingRequest r : requests) {
                 if (r.id == id) {
                     Globals.log.reportProgress("Returning request " + r
@@ -43,6 +44,15 @@ class WorkerAdministration {
             }
         }
 
+        synchronized boolean hasRoomForJob(final int sz) {
+            return !deleted && requests.size() < sz;
+        }
+
+    }
+
+    boolean hasRoomForJob(final IbisIdentifier worker, final int sz) {
+        final WorkerInfo info = workerInfo.get(worker);
+        return info.hasRoomForJob(sz);
     }
 
     private static class OutstandingRequest {

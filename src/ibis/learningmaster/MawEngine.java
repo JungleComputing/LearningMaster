@@ -54,7 +54,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
         isMaster = masterIdentifier.equals(myIbis);
         if (isMaster) {
             // TODO: also use learning scheduler.
-            scheduler = new RoundRobinScheduler();
+            // scheduler = new RoundRobinScheduler();
+            scheduler = new LearningScheduler();
         } else {
             scheduler = new WorkerScheduler(masterIdentifier);
             waitingForRequests.set(false);

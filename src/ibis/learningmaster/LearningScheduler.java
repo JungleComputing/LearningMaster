@@ -27,18 +27,9 @@ class LearningScheduler implements Scheduler {
     private static final int MAXIMAL_OUTSTANDING_JOBS = 2;
 
     private static class PeerInfo {
-        private boolean deleted = false;
         final IbisIdentifier node;
         final Estimator workTimeEstimator;
-        private int outstandingJobs = 0;
-
-        int getOutstandingJobs() {
-            return outstandingJobs;
-        }
-
-        boolean isDeleted() {
-            return deleted;
-        }
+        boolean deleted = false;
 
         PeerInfo(final IbisIdentifier node) {
             super();
@@ -51,12 +42,7 @@ class LearningScheduler implements Scheduler {
         }
 
         void setDeleted() {
-            outstandingJobs = 0;
             deleted = true;
-        }
-
-        void registerOutstandingJob() {
-            outstandingJobs++;
         }
     }
 
@@ -120,37 +106,13 @@ class LearningScheduler implements Scheduler {
         jobQueue.add(job);
     }
 
-    @Override
-    public boolean maintainOutstandingRequests(final Transmitter transmitter,
-            final WorkerAdministration outstandingRequests) {
-        if (jobQueue.isEmpty()) {
-            // There are no tasks to submit.
-            return false;
-        }
-        if (peers.isEmpty()) {
-            // There are no peers to submit tasks to.
-            return false;
-        }
-        final JobInstance job = jobQueue.removeFirst();
-        final PeerInfo worker = selectBestPeer();
-        if (worker == null) {
-            return false;
-        }
-        final int id = outstandingRequests.addRequest(worker.node, job);
-        // FIXME: properly handle task input
-        final ExecuteTaskMessage rq = new ExecuteTaskMessage(job.job, id,
-                job.input);
-        transmitter.addToRequestQueue(worker.node, rq);
-        worker.registerOutstandingJob();
-        return true;
-    }
-
-    private PeerInfo selectBestPeer() {
+    private PeerInfo selectBestPeer(
+            final WorkerAdministration workerAdministration) {
         PeerInfo bestWorker = null;
         double bestResult = Double.POSITIVE_INFINITY;
         for (final PeerInfo p : peers) {
-            if (!p.isDeleted()
-                    && p.getOutstandingJobs() < MAXIMAL_OUTSTANDING_JOBS) {
+            if (workerAdministration.hasRoomForJob(p.node,
+                    MAXIMAL_OUTSTANDING_JOBS)) {
                 final Estimate est = p.workTimeEstimator.getEstimate();
                 final double v = est.getLikelyValue();
                 if (v < bestResult) {
@@ -160,6 +122,30 @@ class LearningScheduler implements Scheduler {
             }
         }
         return bestWorker;
+    }
+
+    @Override
+    public boolean maintainOutstandingRequests(final Transmitter transmitter,
+            final WorkerAdministration workerAdministration) {
+        if (jobQueue.isEmpty()) {
+            // There are no tasks to submit.
+            return false;
+        }
+        if (peers.isEmpty()) {
+            // There are no peers to submit tasks to.
+            return false;
+        }
+        final PeerInfo worker = selectBestPeer(workerAdministration);
+        if (worker == null) {
+            return false;
+        }
+        final JobInstance job = jobQueue.removeFirst();
+        final int id = workerAdministration.addRequest(worker.node, job);
+        // FIXME: properly handle task input
+        final ExecuteTaskMessage rq = new ExecuteTaskMessage(job.job, id,
+                job.input);
+        transmitter.addToRequestQueue(worker.node, rq);
+        return true;
     }
 
     @Override

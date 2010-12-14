@@ -75,12 +75,12 @@ class RoundRobinScheduler implements Scheduler {
             // There are no peers to submit tasks to.
             return false;
         }
-        final JobInstance job = jobQueue.removeFirst();
         if (nextPeer >= peers.size()) {
             nextPeer = 0;
         }
         final IbisIdentifier worker = peers.get(nextPeer);
         nextPeer++;
+        final JobInstance job = jobQueue.removeFirst();
         final int id = outstandingRequests.addRequest(worker, job);
         final ExecuteTaskMessage rq = new ExecuteTaskMessage(job.job, id,
                 job.input);

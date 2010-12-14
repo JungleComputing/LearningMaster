@@ -39,7 +39,7 @@ class Settings {
 
     static final int MAXIMAL_ENGINE_SLEEP_INTERVAL = 2000;
 
-    static final int TASK_COUNT = 20;
+    static final int TASK_COUNT = 200;
 
     // 5 seconds
     static final int TASK_DURATION = 1000 * 5;
