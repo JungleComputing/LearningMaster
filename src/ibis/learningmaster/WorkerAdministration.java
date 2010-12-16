@@ -74,6 +74,7 @@ class WorkerAdministration {
         }
     }
 
+    @SuppressWarnings("synthetic-access")
     void addWorker(final IbisIdentifier worker) {
         workerInfo.put(worker, new WorkerInfo());
     }
@@ -93,6 +94,9 @@ class WorkerAdministration {
     }
 
     void dumpState() {
+        Globals.log
+                .reportProgress("Worker administation: total outstanding request: "
+                        + outstandingRequests);
     }
 
     void removeWorker(final IbisIdentifier worker, final Scheduler scheduler) {

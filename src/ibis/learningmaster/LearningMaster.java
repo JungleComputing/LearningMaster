@@ -14,7 +14,6 @@ import java.util.Properties;
  * 
  */
 class LearningMaster {
-    static final long SLEEP_TIME = 300;
 
     private static void usage(final String msg, final String args[]) {
         System.err.println("Error: " + msg);
@@ -26,7 +25,29 @@ class LearningMaster {
     }
 
     private static class SleepJob implements AtomicJob, Serializable {
+        private final long sleepTime;
         private static final long serialVersionUID = 1L;
+
+        class SleepJobType extends JobType {
+            final long sleepTime;
+
+            SleepJobType(long sleepTime) {
+                this.sleepTime = sleepTime;
+            }
+
+            @Override
+            public boolean equals(Object oth) {
+                if (!(oth instanceof SleepJobType)) {
+                    return false;
+                }
+                final SleepJobType other = (SleepJobType) oth;
+                return this.sleepTime == other.sleepTime;
+            }
+        }
+
+        SleepJob(long sleepTime) {
+            this.sleepTime = sleepTime;
+        }
 
         @Override
         public boolean isSupported() {
@@ -36,15 +57,19 @@ class LearningMaster {
         @Override
         public Serializable run(final Serializable input)
                 throws JobFailedException {
-            final Long time = (Long) input;
             try {
-                Thread.sleep(time);
+                Thread.sleep(sleepTime);
             } catch (final InterruptedException e) {
                 // Ignore
             }
             return null;
         }
 
+        @Override
+        public JobType getJobType() {
+            // TODO Auto-generated method stub
+            return new SleepJobType(sleepTime);
+        }
     }
 
     private static void setPropertyOption(final String arg) {
@@ -74,7 +99,7 @@ class LearningMaster {
             final MawEngine e = new MawEngine();
             if (e.isMaster()) {
                 for (int i = 0; i < Settings.JOB_COUNT; i++) {
-                    e.submitRequest(new SleepJob(), SLEEP_TIME);
+                    e.submitRequest(new SleepJob(300), null);
                 }
                 e.endRequests();
             }

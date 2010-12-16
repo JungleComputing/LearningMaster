@@ -2,6 +2,14 @@ package ibis.learningmaster;
 
 import java.io.Serializable;
 
+/**
+ * A message from a master to a worker, asking it to execute the given job with
+ * the given input. An identifier is also added; it is used by the master for
+ * its administration of outstanding jobs.
+ * 
+ * @author Kees van Reeuwijk
+ * 
+ */
 class ExecuteJobMessage extends SmallMessage {
     private static final long serialVersionUID = 1L;
 

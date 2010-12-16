@@ -13,4 +13,6 @@ public interface Job {
      * @return True iff this job can run.
      */
     abstract boolean isSupported();
+
+    abstract JobType getJobType();
 }
