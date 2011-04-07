@@ -2,7 +2,7 @@ package ibis.learningmaster;
 
 import ibis.learningmaster.EventQueue.Event;
 import ibis.steel.Estimator;
-import ibis.steel.ExponentialDecayEstimator;
+import ibis.steel.GaussianDecayingEstimator;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -131,7 +131,7 @@ class StochasticLearningMaster {
         private int maxQueueLength = 0;
 
         static Estimator buildEstimator() {
-            return new ExponentialDecayEstimator(0, 0, 0.1);
+            return new GaussianDecayingEstimator(0, 0, 0.1);
             // return new GaussianEstimator();
         }
 

@@ -1,7 +1,7 @@
 package ibis.learningmaster;
 
 import ibis.steel.Estimator;
-import ibis.steel.ExponentialDecayEstimator;
+import ibis.steel.GaussianDecayingEstimator;
 
 import java.io.PrintStream;
 
@@ -26,7 +26,7 @@ class StochasticLearningDispatcher {
         private final Estimator performance = buildEstimator();
 
         static Estimator buildEstimator() {
-            return new ExponentialDecayEstimator(0, 0);
+            return new GaussianDecayingEstimator(0, 0);
             // return new GaussianEstimator();
         }
 

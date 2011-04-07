@@ -8,8 +8,8 @@ import ibis.ipl.IbisIdentifier;
 import ibis.ipl.Registry;
 import ibis.ipl.RegistryEventHandler;
 import ibis.steel.Estimator;
-import ibis.steel.ExponentialDecayEstimator;
-import ibis.steel.ExponentialDecayLogEstimator;
+import ibis.steel.GaussianDecayingEstimator;
+import ibis.steel.LogGaussianDecayingEstimator;
 import ibis.steel.GaussianEstimator;
 import ibis.steel.LogGaussianEstimator;
 
@@ -63,9 +63,9 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
         private final Estimator estimators[] = {
                 new LogGaussianEstimator(Math.log(1e-3), Math.log(1e-1)),
                 new GaussianEstimator(1e-3, 1e-3),
-                new ExponentialDecayLogEstimator(Math.log(1e-3),
+                new LogGaussianDecayingEstimator(Math.log(1e-3),
                         Math.log(1e-1), 1),
-                new ExponentialDecayEstimator(1e-3, 1e-3) };
+                new GaussianDecayingEstimator(1e-3, 1e-3) };
         private long latestPingSentTime;
 
         NodeAdministration(final IbisIdentifier id) {

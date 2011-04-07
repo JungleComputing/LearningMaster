@@ -3,7 +3,7 @@ package ibis.learningmaster;
 import ibis.ipl.IbisIdentifier;
 import ibis.steel.Estimate;
 import ibis.steel.Estimator;
-import ibis.steel.ExponentialDecayLogEstimator;
+import ibis.steel.LogGaussianDecayingEstimator;
 import ibis.steel.LogGaussianEstimate;
 
 import java.io.PrintStream;
@@ -53,7 +53,7 @@ class LearningScheduler implements Scheduler {
              */
             final Estimate est = new LogGaussianEstimate(Math.log(1e-4),
                     Math.log(1000), 1);
-            workTimeEstimator = new ExponentialDecayLogEstimator(est,
+            workTimeEstimator = new LogGaussianDecayingEstimator(est,
                     DECAY_FACTOR);
         }
 
