@@ -6,6 +6,9 @@ import java.io.PrintStream;
 import java.io.Serializable;
 
 /**
+ * This class does nothing more than watch for the departure of the master node.
+ * Once it is gone, the worker is gone.
+ * 
  * @author Kees van Reeuwijk
  * 
  */
@@ -19,6 +22,7 @@ class WorkerScheduler implements Scheduler {
 
     @Override
     public void shutdown() {
+        // Nothing to do.
     }
 
     @Override

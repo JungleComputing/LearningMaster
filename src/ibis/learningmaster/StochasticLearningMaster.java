@@ -8,6 +8,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 
+/**
+ * A master in a simulated master-worker system that tries to learn from the
+ * previous behavior of each worker to predict its future performance.
+ * 
+ * @author Kees van Reeuwijk
+ * 
+ */
 class StochasticLearningMaster {
     private static final int WORKERS = 20;
     private static final int SAMPLES = 10;
@@ -52,6 +59,12 @@ class StochasticLearningMaster {
         }
     }
 
+    /**
+     * The administration for one of our workers.
+     * 
+     * @author Kees van Reeuwijk
+     * 
+     */
     private class Worker {
         ZeroClampedGaussianSource workTimeGenerator;
         private double busyUntilTime;

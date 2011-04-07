@@ -13,6 +13,9 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
+ * A job scheduler that tries to learn the performance of the available workers,
+ * and by priority keeps the most efficient workers fully occupied.
+ * 
  * Schedule jobs one by one on the available workers. Note that there is always
  * at most one outstanding job. This is not realistic, but for the purposes of
  * learning behavior it is simpler.
@@ -26,7 +29,16 @@ class LearningScheduler implements Scheduler {
     private static final double DECAY_FACTOR = 0.1;
     private static final int MAXIMAL_OUTSTANDING_JOBS = 2;
 
+    /**
+     * The information for each worker.
+     * 
+     * @author Kees van Reeuwijk
+     * 
+     */
     private static class WorkerInfo {
+        /**
+         * The identifier Ibis and we use to uniquely identify this worker.
+         */
         final IbisIdentifier node;
         final Estimator workTimeEstimator;
         boolean deleted = false;
@@ -34,7 +46,11 @@ class LearningScheduler implements Scheduler {
         WorkerInfo(final IbisIdentifier node) {
             super();
             this.node = node;
-            // TODO: better initial estimate.
+            /**
+             * Construct an estimator for the performance of a worker.
+             * 
+             * TODO: better initial estimate for worker performance.
+             */
             final Estimate est = new LogGaussianEstimate(Math.log(1e-4),
                     Math.log(1000), 1);
             workTimeEstimator = new ExponentialDecayLogEstimator(est,
@@ -46,7 +62,18 @@ class LearningScheduler implements Scheduler {
         }
     }
 
-    private static int searchWorkerInfoList(final List<WorkerInfo> l,
+    /**
+     * Given a list of worker info and an ibis identifier, return the index in
+     * the list of the worker with this identifier.
+     * 
+     * @param l
+     *            The list to search.
+     * @param node
+     *            The identifier to search for.
+     * @return The index in the list, or <code>-1</code> if the worker can not
+     *         be found.
+     */
+    private static int searchWorkerInfoIndex(final List<WorkerInfo> l,
             final IbisIdentifier node) {
         for (int i = 0; i < l.size(); i++) {
             if (node.equals(l.get(i).node)) {
@@ -66,7 +93,7 @@ class LearningScheduler implements Scheduler {
      */
     @Override
     public void removeNode(final IbisIdentifier worker) {
-        final int ix = searchWorkerInfoList(workers, worker);
+        final int ix = searchWorkerInfoIndex(workers, worker);
         if (ix >= 0) {
             final WorkerInfo info = workers.remove(ix);
             if (info != null) {

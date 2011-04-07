@@ -24,7 +24,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
             Settings.MAXIMAL_RECEIVED_MESSAGE_QUEUE_LENGTH);
     private final TimeStatistics receivedMessageQueueStatistics = new TimeStatistics();
     private final Flag stopped = new Flag(false);
-    private final Flag waitingForRequests = new Flag(true);
+    /** If set, the master is still waiting for job submissions to handle. */
+    private final Flag waitingForSubmissions = new Flag(true);
     private final Transmitter transmitter;
     private final ConcurrentLinkedQueue<IbisIdentifier> deletedNodes = new ConcurrentLinkedQueue<IbisIdentifier>();
     private final ConcurrentLinkedQueue<IbisIdentifier> newWorkers = new ConcurrentLinkedQueue<IbisIdentifier>();
@@ -53,12 +54,12 @@ class MawEngine extends Thread implements PacketReceiveListener,
                 .elect(MASTER_ELECTION_NAME);
         isMaster = masterIdentifier.equals(myIbis);
         if (isMaster) {
-            // TODO: also use learning scheduler.
             // scheduler = new RoundRobinScheduler();
             scheduler = new LearningScheduler();
         } else {
             scheduler = new WorkerScheduler(masterIdentifier);
-            waitingForRequests.set(false);
+            // As a worker, we don't wait for submissions.
+            waitingForSubmissions.set(false);
         }
         receivePort = new PacketUpcallReceivePort(localIbis,
                 Globals.receivePortName, this);
@@ -408,7 +409,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
                         }
                     }
                 } while (progress);
-                if (!waitingForRequests.isSet()
+                if (!waitingForSubmissions.isSet()
                         && workerAdministration.isEmpty()
                         && scheduler.shouldStop()) {
                     Globals.log
@@ -484,7 +485,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
     public void endRequests() {
         Globals.log
                 .reportProgress("All requests have been submitted; waiting for work queue to drain");
-        waitingForRequests.set(false);
+        waitingForSubmissions.set(false);
         wakeEngineThread();
     }
 }
