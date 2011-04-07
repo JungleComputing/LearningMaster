@@ -31,12 +31,12 @@ class LearningMaster {
         class SleepJobType extends JobType {
             final long sleepTime;
 
-            SleepJobType(long sleepTime) {
+            SleepJobType(final long sleepTime) {
                 this.sleepTime = sleepTime;
             }
 
             @Override
-            public boolean equals(Object oth) {
+            public boolean equals(final Object oth) {
                 if (!(oth instanceof SleepJobType)) {
                     return false;
                 }
@@ -45,7 +45,7 @@ class LearningMaster {
             }
         }
 
-        SleepJob(long sleepTime) {
+        SleepJob(final long sleepTime) {
             this.sleepTime = sleepTime;
         }
 
@@ -60,14 +60,13 @@ class LearningMaster {
             try {
                 Thread.sleep(sleepTime);
             } catch (final InterruptedException e) {
-                // Ignore
+                // We've been interrupted.
             }
             return null;
         }
 
         @Override
         public JobType getJobType() {
-            // TODO Auto-generated method stub
             return new SleepJobType(sleepTime);
         }
     }

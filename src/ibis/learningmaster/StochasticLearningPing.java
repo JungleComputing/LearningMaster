@@ -9,8 +9,8 @@ import ibis.ipl.Registry;
 import ibis.ipl.RegistryEventHandler;
 import ibis.steel.Estimator;
 import ibis.steel.GaussianDecayingEstimator;
-import ibis.steel.LogGaussianDecayingEstimator;
 import ibis.steel.GaussianEstimator;
+import ibis.steel.LogGaussianDecayingEstimator;
 import ibis.steel.LogGaussianEstimator;
 
 import java.io.File;
@@ -353,21 +353,15 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
                             .isEmpty();
                     if (!stopped.isSet() && messageQueueIsEmpty
                             && newPeers.isEmpty() && deletedPeers.isEmpty()) {
-                        try {
-                            final long sleepStartTime = System
-                                    .currentTimeMillis();
-                            if (Settings.TraceEngine) {
-                                Globals.log
-                                        .reportProgress("Main loop: waiting");
-                            }
-                            this.wait(sleepTime);
-                            final long sleepInterval = System
-                                    .currentTimeMillis() - sleepStartTime;
-                            idleTime += sleepInterval;
-                            sleptLong = sleepInterval > 9 * sleepTime / 10;
-                        } catch (final InterruptedException e) {
-                            // Ignored.
+                        final long sleepStartTime = System.currentTimeMillis();
+                        if (Settings.TraceEngine) {
+                            Globals.log.reportProgress("Main loop: waiting");
                         }
+                        this.wait(sleepTime);
+                        final long sleepInterval = System.currentTimeMillis()
+                                - sleepStartTime;
+                        idleTime += sleepInterval;
+                        sleptLong = sleepInterval > 9 * sleepTime / 10;
                     }
                 }
                 if (sleptLong) {
@@ -377,6 +371,8 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
                     stopped.set();
                 }
             }
+        } catch (final InterruptedException e) {
+            // We got stopped.
         } finally {
             transmitter.setShuttingDown();
             transmitter.setStopped();

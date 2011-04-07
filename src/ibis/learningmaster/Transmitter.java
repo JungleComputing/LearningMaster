@@ -14,11 +14,10 @@ class Transmitter extends Thread {
     private final NodeSet deadNodes = new NodeSet();
     private long idleTime = 0L;
     private boolean sentMessages = false;
-    private boolean stopped;
     private boolean shuttingDown = false;
 
     Transmitter(final EngineInterface node) {
-        super("Arnold transmitter thread");
+        super("Transmitter thread");
         setDaemon(true);
         this.sendPort = new PacketSendPort(node);
         this.engine = node; // We make sure we only access the engine interface.
@@ -106,13 +105,9 @@ class Transmitter extends Thread {
         this.notifyAll();
     }
 
-    private synchronized boolean isStopped() {
-        return stopped;
-    }
-
     @Override
     public void run() {
-        while (!isStopped()) {
+        while (true) {
             boolean addedToRetriesQueue = false;
             while (true) {
                 // Request messages have top priority.
@@ -202,8 +197,7 @@ class Transmitter extends Thread {
     }
 
     synchronized void setStopped() {
-        stopped = true;
-        this.notifyAll();
+        interrupt();
     }
 
     /**
