@@ -14,7 +14,7 @@ import java.io.Serializable;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-class MawEngine extends Thread implements PacketReceiveListener,
+class MawEngine extends Thread implements MessageReceiveListener,
         RegistryEventHandler, EngineInterface {
     private static final IbisCapabilities ibisCapabilities = new IbisCapabilities(
             IbisCapabilities.MEMBERSHIP_UNRELIABLE,
@@ -23,7 +23,6 @@ class MawEngine extends Thread implements PacketReceiveListener,
     private final ReceivedMessageQueue receivedMessageQueue = new ReceivedMessageQueue(
             Settings.MAXIMAL_RECEIVED_MESSAGE_QUEUE_LENGTH);
     private final TimeStatistics receivedMessageQueueStatistics = new TimeStatistics();
-    private final Flag stopped = new Flag(false);
     /** If set, the master is still waiting for job submissions to handle. */
     private final Flag waitingForSubmissions = new Flag(true);
     private final Transmitter transmitter;
@@ -82,10 +81,10 @@ class MawEngine extends Thread implements PacketReceiveListener,
     @Override
     public void died(final IbisIdentifier worker) {
         if (worker.equals(localIbis.identifier())) {
-            if (!stopped.isSet()) {
+            if (!isInterrupted()) {
                 Globals.log
                         .reportError("This worker has been declared dead, we might as well stop");
-                setStopped();
+                interrupt();
             }
         } else {
             transmitter.deleteNode(worker);
@@ -97,10 +96,10 @@ class MawEngine extends Thread implements PacketReceiveListener,
     @Override
     public void left(final IbisIdentifier worker) {
         if (worker.equals(localIbis.identifier())) {
-            if (!stopped.isSet()) {
+            if (!isInterrupted()) {
                 Globals.log
                         .reportError("This worker has been declared `left', we might as well stop");
-                setStopped();
+                interrupt();
             }
         } else {
             transmitter.deleteNode(worker);
@@ -212,24 +211,28 @@ class MawEngine extends Thread implements PacketReceiveListener,
     }
 
     private void setStopped() {
-        stopped.set();
+        interrupt();
         wakeEngineThread(); // Something interesting has happened.
     }
 
     /**
      * Handles an incoming message.
      * 
-     * @param packet
+     * @param message
      *            The message to handle.
      */
     @Override
-    public void messageReceived(final Message packet) {
+    public void messageReceived(final Message message) {
         // We are not allowed to do I/O in this thread, and we shouldn't
         // take too much time, so put all messages in a local queue to be
         // handled by the main loop.
-        receivedMessageQueue.add(packet);
+        try {
+            receivedMessageQueue.add(message);
+        } catch (final InterruptedException e) {
+            // Ignore
+        }
         if (Settings.TraceReceiver) {
-            Globals.log.reportProgress("Added to receive queue: " + packet);
+            Globals.log.reportProgress("Added to receive queue: " + message);
         }
         wakeEngineThread(); // Something interesting has happened.
     }
@@ -382,7 +385,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
     public void run() {
         final int sleepTime = Settings.MAXIMAL_ENGINE_SLEEP_INTERVAL;
         try {
-            while (!stopped.isSet()) {
+            while (true) {
                 boolean sleptLong = false;
                 boolean progress;
                 do {
@@ -414,7 +417,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
                         && scheduler.shouldStop()) {
                     Globals.log
                             .reportProgress("Setting engine to stopped state");
-                    stopped.set();
+                    interrupt();
                     break;
                 }
                 synchronized (this) {
@@ -423,8 +426,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
                     final boolean noRequestsToSubmit = workerAdministration
                             .isEmpty() && !scheduler.thereAreRequestsToSubmit();
                     if (noRequestsToSubmit && messageQueueIsEmpty
-                            && !stopped.isSet() && newWorkers.isEmpty()
-                            && deletedNodes.isEmpty() && workQueue.isEmpty()) {
+                            && newWorkers.isEmpty() && deletedNodes.isEmpty()
+                            && workQueue.isEmpty()) {
                         try {
                             final long sleepStartTime = System
                                     .currentTimeMillis();
@@ -438,7 +441,8 @@ class MawEngine extends Thread implements PacketReceiveListener,
                             idleTime += sleepInterval;
                             sleptLong = sleepInterval > 9 * sleepTime / 10;
                         } catch (final InterruptedException e) {
-                            // Ignored.
+                            // We've been interrupted, stop.
+                            break;
                         }
                     }
                 }
@@ -455,7 +459,7 @@ class MawEngine extends Thread implements PacketReceiveListener,
             try {
                 transmitter.join(Settings.TRANSMITTER_SHUTDOWN_TIMEOUT);
             } catch (final InterruptedException e) {
-                // ignore.
+                // Somebody wants us to stop.
             }
             try {
                 localIbis.end();

@@ -22,7 +22,7 @@ class PacketUpcallReceivePort implements MessageUpcall {
 
     private final ReceivePort port;
 
-    private final PacketReceiveListener listener;
+    private final MessageReceiveListener listener;
 
     /**
      * Constructs a new PacketSendPort.
@@ -34,7 +34,7 @@ class PacketUpcallReceivePort implements MessageUpcall {
      * @throws IOException
      */
     PacketUpcallReceivePort(final Ibis ibis, final String name,
-            final PacketReceiveListener listener) throws IOException {
+            final MessageReceiveListener listener) throws IOException {
         this.listener = listener;
         port = ibis.createReceivePort(portType, name, this);
     }

@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-class StochasticLearningPing extends Thread implements PacketReceiveListener,
+class StochasticLearningPing extends Thread implements MessageReceiveListener,
         EngineInterface, RegistryEventHandler {
     private static final int PINGCOUNT = 1000000;
     private final Transmitter transmitter;
@@ -417,7 +417,11 @@ class StochasticLearningPing extends Thread implements PacketReceiveListener,
         // take too much time, so put all messages in a local queue to be
         // handled by the main loop.
         packet.arrivalTime = System.nanoTime();
-        receivedMessageQueue.add(packet);
+        try {
+            receivedMessageQueue.add(packet);
+        } catch (final InterruptedException e) {
+            // Ignore
+        }
         if (Settings.TraceReceiver) {
             Globals.log.reportProgress("Added to receive queue: " + packet);
         }

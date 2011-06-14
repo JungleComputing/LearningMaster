@@ -55,18 +55,13 @@ class ReceivedMessageQueue {
         System.out.println();
     }
 
-    void add(final Message msg) {
-        try {
-            q.put(msg);
-            final int sz = q.size();
-            if (maximalQueueLength < sz) {
-                maximalQueueLength = sz;
-            }
-            countMessage(msg);
-        } catch (final InterruptedException e) {
-            Globals.log
-                    .reportInternalError("Got interrupt waiting for receive message queue to drain");
+    void add(final Message msg) throws InterruptedException {
+        q.put(msg);
+        final int sz = q.size();
+        if (maximalQueueLength < sz) {
+            maximalQueueLength = sz;
         }
+        countMessage(msg);
     }
 
     boolean isEmpty() {
